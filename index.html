@@ -6,6 +6,7 @@
 <title>Carbon-Flux | LGR Analyzer Platform</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
 
@@ -962,63 +963,105 @@ function handleXlsxUpload(event) {
   if (!file) return;
   showFileItem('list-xlsx', file, 'parsing...');
 
-  if (file.name.endsWith('.csv')) {
+  if (file.name.toLowerCase().endsWith('.csv')) {
     Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
+      header: true, skipEmptyLines: true,
       complete: result => {
         state.timesData = result.data;
         buildWindowsFromTimes();
-        showFileItem('list-xlsx', file, 'ok', `${state.timesData.length} rows`);
+        showFileItem('list-xlsx', file, 'ok', `${state.timesData.length} linhas`);
         showDataPreview();
       }
     });
-  } else {
-    // For xlsx, use SheetJS if available, else prompt user to convert to CSV
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        // Try to parse as binary xlsx using basic approach
-        // Use SheetJS from CDN
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        script.onload = () => {
-          const data = new Uint8Array(e.target.result);
-          const wb = XLSX.read(data, {type:'array', cellDates: true, cellNF: true});
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          // raw:false faz SheetJS formatar como string, mas perde precisão.
-          // Usamos raw:true + cellDates:true para ter os valores reais.
-          const json = XLSX.utils.sheet_to_json(ws, {defval:'', raw:true, cellDates:true});
-          state.timesData = json;
-          buildWindowsFromTimes();
-          showFileItem('list-xlsx', file, 'ok', `${state.timesData.length} measurement windows found`);
-          showDataPreview();
-        };
-        document.head.appendChild(script);
-      } catch(err) {
-        showFileItem('list-xlsx', file, 'err', 'Could not parse xlsx. Try exporting as CSV.');
+    return;
+  }
+
+  // xlsx: carrega arquivo como ArrayBuffer
+  const reader = new FileReader();
+  reader.onload = e => {
+    const arrayBuf = e.target.result;
+    // Se SheetJS já está carregado, usa direto; senão injeta o script
+    if (typeof XLSX !== 'undefined') {
+      parseXlsxBuffer(arrayBuf, file);
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = () => parseXlsxBuffer(arrayBuf, file);
+      script.onerror = () => showFileItem('list-xlsx', file, 'err', 'Não foi possível carregar SheetJS. Use CSV.');
+      document.head.appendChild(script);
+    }
+  };
+  reader.onerror = () => showFileItem('list-xlsx', file, 'err', 'Erro ao ler o arquivo.');
+  reader.readAsArrayBuffer(file);
+}
+
+function parseXlsxBuffer(arrayBuf, file) {
+  try {
+    const data = new Uint8Array(arrayBuf);
+    // cellDates:true → SheetJS entrega Date objects para células de data/hora
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+
+    console.log('[Carbon-Flux] Abas encontradas no xlsx:', wb.SheetNames);
+
+    // Encontra a aba correta: procura a que tem a coluna "used_start"
+    // Se não achar, usa a primeira aba
+    let ws = null;
+    let sheetUsed = wb.SheetNames[0];
+
+    for (const name of wb.SheetNames) {
+      const sheet = wb.Sheets[name];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true, cellDates: true, header: 1 });
+      if (json.length > 0) {
+        const headers = json[0].map(h => String(h).trim().toLowerCase());
+        console.log(`[Carbon-Flux] Aba "${name}" headers:`, headers);
+        if (headers.includes('used_start') || headers.includes('start')) {
+          ws = sheet;
+          sheetUsed = name;
+          console.log(`[Carbon-Flux] Usando aba: "${name}"`);
+          break;
+        }
       }
-    };
-    reader.readAsArrayBuffer(file);
+    }
+
+    // Fallback: primeira aba
+    if (!ws) {
+      ws = wb.Sheets[wb.SheetNames[0]];
+      sheetUsed = wb.SheetNames[0];
+      console.warn('[Carbon-Flux] Coluna "used_start" não encontrada. Usando primeira aba:', sheetUsed);
+    }
+
+    const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true, cellDates: true });
+
+    console.log(`[Carbon-Flux] Linhas lidas da aba "${sheetUsed}":`, json.length);
+    if (json.length > 0) {
+      console.log('[Carbon-Flux] Chaves da primeira linha:', Object.keys(json[0]));
+      console.log('[Carbon-Flux] Primeira linha completa:', JSON.parse(JSON.stringify(json[0],
+        (k, v) => v instanceof Date ? `[Date: ${v.toISOString()}]` : v)));
+    }
+
+    state.timesData = json;
+    buildWindowsFromTimes();
+    showFileItem('list-xlsx', file, 'ok', `${json.length} janelas · aba "${sheetUsed}"`);
+    showDataPreview();
+  } catch (err) {
+    console.error('[Carbon-Flux] Erro ao parsear xlsx:', err);
+    showFileItem('list-xlsx', file, 'err', 'Erro ao parsear xlsx: ' + err.message);
   }
 }
 
 function buildWindowsFromTimes() {
   if (!state.timesData) return;
 
-  // Debug: mostrar no console o tipo e valor das primeiras colunas
   if (state.timesData.length > 0) {
     const r0 = state.timesData[0];
-    const start_raw = r0['used_start'] || r0['start'] || '';
-    const stop_raw  = r0['used_stop']  || r0['stop']  || '';
-    const date_raw  = r0['Date'] || '';
-    console.log('[Carbon-Flux] Times row 0 raw values:');
-    console.log('  used_start:', JSON.stringify(start_raw), '| type:', typeof start_raw, '| instanceof Date:', start_raw instanceof Date);
-    console.log('  used_stop: ', JSON.stringify(stop_raw),  '| type:', typeof stop_raw,  '| instanceof Date:', stop_raw instanceof Date);
-    console.log('  Date:      ', JSON.stringify(date_raw),  '| type:', typeof date_raw,  '| instanceof Date:', date_raw instanceof Date);
-    console.log('  → parsed start:', excelTimeToHMS(start_raw));
-    console.log('  → parsed stop: ', excelTimeToHMS(stop_raw));
-    console.log('  → parsed date: ', excelDateToString(date_raw));
+    const start_raw = r0['used_start'] !== undefined ? r0['used_start'] : (r0['start'] || '');
+    const stop_raw  = r0['used_stop']  !== undefined ? r0['used_stop']  : (r0['stop']  || '');
+    const date_raw  = r0['Date'] !== undefined ? r0['Date'] : '';
+    const toStr = v => v instanceof Date ? `[Date UTC: ${v.toISOString()}]` : `${typeof v}: ${JSON.stringify(v)}`;
+    console.log('[Carbon-Flux] buildWindowsFromTimes — row 0:');
+    console.log('  used_start raw →', toStr(start_raw), '→ parsed:', excelTimeToHMS(start_raw));
+    console.log('  used_stop  raw →', toStr(stop_raw),  '→ parsed:', excelTimeToHMS(stop_raw));
+    console.log('  Date       raw →', toStr(date_raw),  '→ parsed:', excelDateToString(date_raw));
   }
 
   state.windows = state.timesData.map((row, i) => {
