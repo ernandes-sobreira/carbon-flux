@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carbon-Flux | LGR Analyzer Platform</title>
+<title>Carbon-Flux v3 | LGR Analyzer Platform</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -299,9 +302,10 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 /* ---- CURVE VIEWER ---- */
 .curve-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   margin-top: 20px;
+  max-width: 860px;
 }
 .curve-card {
   background: #fff;
@@ -331,7 +335,7 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   font-size: 0.78rem;
   color: var(--text-mid);
 }
-.curve-canvas-wrap { position: relative; width: 100%; height: 170px; }
+.curve-canvas-wrap { position: relative; width: 100%; height: 200px; }
 .curve-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
 .curve-actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
 .curve-actions .r2 {
@@ -340,6 +344,121 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   color: var(--text-mid);
   margin-left: auto;
 }
+
+/* ---- CURVE SLIDER ---- */
+.slider-wrap {
+  margin: 12px 0 8px;
+  padding: 12px 14px 10px;
+  background: var(--green-pale);
+  border: 1.5px solid var(--green-light);
+  border-radius: 10px;
+}
+.slider-wrap label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  display: block;
+  margin-bottom: 10px;
+}
+/* Slider duplo: dois inputs sobrepostos */
+.dual-slider {
+  position: relative;
+  height: 36px;
+  width: 100%;
+}
+.dual-slider input[type=range] {
+  position: absolute;
+  width: 100%;
+  height: 36px;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+  top: 0; left: 0;
+  margin: 0; padding: 0;
+  outline: none;
+}
+/* thumb grande e fácil de tocar no mobile */
+.dual-slider input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--green-mid);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.30);
+  pointer-events: all;
+  cursor: grab;
+  margin-top: 5px;
+}
+.dual-slider input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; background: var(--green-dark); }
+.dual-slider input[type=range]::-moz-range-thumb {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--green-mid);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.30);
+  pointer-events: all;
+  cursor: grab;
+}
+.dual-slider input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+  margin-top: 0;
+}
+.slider-track {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  height: 6px;
+  background: var(--gray-mid);
+  border-radius: 3px;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.slider-range {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  height: 6px;
+  background: var(--green-mid);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+}
+.slider-vals {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--green-dark);
+  margin-top: 6px;
+  font-weight: 700;
+}
+.slider-vals span {
+  background: var(--green-mid);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+}
+.curve-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  margin: 10px 0;
+  background: var(--gray-light);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+}
+.curve-stats .stat-item { display: flex; justify-content: space-between; }
+.curve-stats .stat-lbl { color: var(--text-mid); }
+.curve-stats .stat-val-s { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--green-dark); }
+.curve-stats .stat-val-s.good { color: #2d9e5f; }
+.curve-stats .stat-val-s.warn { color: #f0a500; }
+.curve-stats .stat-val-s.bad  { color: #e74c3c; }
+
 
 /* ---- RESULTS ---- */
 .results-grid {
@@ -481,24 +600,83 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
 /* ---- RESPONSIVE ---- */
 @media (max-width: 800px) {
-  main { padding: 20px 14px 40px; }
-  #topbar { padding: 0 16px; gap: 8px; }
-  #topbar nav button { padding: 6px 10px; font-size: 0.78rem; }
-  #hero-banner { flex-direction: column; padding: 28px 22px; }
-  .curve-grid { grid-template-columns: 1fr; }
+  /* Layout geral */
+  main { padding: 12px 10px 40px; }
+  #topbar { padding: 0 10px; gap: 4px; height: 54px; }
+  #topbar .logo { font-size: 1.15rem; }
+  #topbar nav button { padding: 5px 8px; font-size: 0.72rem; letter-spacing: 0; }
+  #topbar .badge { font-size: 0.65rem; padding: 2px 6px; }
+  #hero-banner { flex-direction: column; padding: 20px 16px; }
+  #hero-banner .h1 { font-size: 1.4rem; }
+  #hero-banner .icon-gas { font-size: 2.4rem; }
+
+  /* Cards e grids */
+  .card { padding: 16px 14px; margin-bottom: 16px; }
+  .curve-grid { grid-template-columns: 1fr; gap: 14px; }
+  .results-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px 12px; }
+  .stat-card .stat-val { font-size: 1.4rem; }
+
+  /* Gráficos — altura menor no mobile */
+  .chart-full { padding: 14px 10px; }
+  .chart-full canvas { max-height: 260px; }
+  #chart-jitter { max-height: 320px; }
+
+  /* Barras SD lado a lado → uma embaixo da outra */
+  #tab-summary .chart-full > div { grid-template-columns: 1fr !important; }
+
+  /* Tabela de resultados — scroll horizontal */
+  #tab-table { overflow-x: auto; }
+  .results-table { font-size: 0.75rem; min-width: 700px; }
+  .results-table th, .results-table td { padding: 6px 8px; }
+
+  /* Tabs — scroll horizontal se necessário */
+  .tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; gap: 0; }
+  .tab-btn { padding: 8px 12px; font-size: 0.8rem; flex-shrink: 0; }
+
+  /* Summary por tratamento */
+  #summary-by-treat-table { font-size: 0.73rem; min-width: 600px; }
+
+  /* Formulários */
+  .sci-form .form-grid { grid-template-columns: 1fr; }
+  .sci-form input[type=text], .sci-form textarea, .sci-form select { font-size: 0.9rem; }
+
+  /* Upload */
+  #section-upload > div:first-of-type { grid-template-columns: 1fr !important; }
+  .upload-zone { padding: 24px 16px; }
+
+  /* Curvas — slider e stats */
+  .curve-stats { grid-template-columns: 1fr 1fr; font-size: 0.74rem; padding: 6px 8px; }
+  /* slider já tem thumb grande no base CSS */
+  .curve-canvas-wrap { height: 150px; }
+
+  /* Jitterplot — legenda */
+  #jitter-legend { flex-wrap: wrap; gap: 6px; }
+
+  /* Botões */
+  .btn { padding: 9px 14px; font-size: 0.85rem; }
+  .btn-sm { padding: 7px 10px; font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+  #topbar nav button span.nav-label { display: none; }
+  .results-grid { grid-template-columns: 1fr 1fr; }
+  .stat-card .stat-val { font-size: 1.2rem; }
 }
 </style>
 </head>
 <body>
 
+<!-- Carbon-Flux v3.0 - slider build - 2026-03-27 -->
 <!-- TOP BAR -->
 <div id="topbar">
   <div class="logo">Carbon<span>-Flux</span></div>
+  <div style="font-size:0.65rem;color:#52b788;font-family:monospace;opacity:0.8;">v3·slider</div>
   <nav>
-    <button class="active" onclick="showSection('project')">🔬 Project</button>
-    <button onclick="showSection('upload')">📂 Data</button>
-    <button onclick="showSection('curves')">📈 Curves</button>
-    <button onclick="showSection('results')">📊 Results</button>
+    <button class="active" onclick="showSection('project')">🔬 <span class="nav-label">Project</span></button>
+    <button onclick="showSection('upload')">📂 <span class="nav-label">Data</span></button>
+    <button onclick="showSection('curves')">📈 <span class="nav-label">Curves</span></button>
+    <button onclick="showSection('results')">📊 <span class="nav-label">Results</span></button>
   </nav>
   <div class="badge" id="status-badge">Instrumento: LGR</div>
 </div>
@@ -725,12 +903,15 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
     📂 Upload and process your data in the <strong>Data</strong> tab to see curves here.
   </div>
 
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;" id="curve-controls" style="display:none">
-    <button class="btn btn-sm btn-primary" onclick="acceptAll()">✅ Accept all</button>
-    <button class="btn btn-sm btn-danger" onclick="rejectAll()">❌ Reject all</button>
-    <button class="btn btn-sm btn-ghost" onclick="showGas('ch4')">Show CH₄</button>
-    <button class="btn btn-sm btn-ghost" onclick="showGas('co2')">Show CO₂</button>
-    <button class="btn btn-sm btn-ghost" onclick="showGas('h2o')">Show H₂O</button>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;" id="curve-controls" style="display:none">
+    <button class="btn btn-sm btn-primary" onclick="acceptAll()">✅ Aceitar todas</button>
+    <button class="btn btn-sm btn-danger"  onclick="rejectAll()">❌ Rejeitar todas</button>
+    <button class="btn btn-sm btn-ghost"   onclick="showGas('ch4')">CH₄</button>
+    <button class="btn btn-sm btn-ghost"   onclick="showGas('co2')">CO₂</button>
+    <button class="btn btn-sm btn-ghost"   onclick="showGas('h2o')">H₂O</button>
+    <button class="btn btn-sm btn-accent"  onclick="applyAndGoResults()" style="margin-left:auto;">
+      📊 Aplicar ajustes → Resultados
+    </button>
   </div>
 
   <div class="curve-grid" id="curve-grid"></div>
@@ -781,10 +962,15 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
           <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-barsd-ch4','CH4_flux_bar')">⬇ CH₄</button>
           <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-barsd-co2','CO2_flux_bar')">⬇ CO₂</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div id="barsd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
           <div><canvas id="chart-barsd-ch4" height="220"></canvas></div>
           <div><canvas id="chart-barsd-co2" height="220"></canvas></div>
         </div>
+        <script>
+          if(window.innerWidth<700){
+            document.getElementById('barsd-grid').style.gridTemplateColumns='1fr';
+          }
+        </script>
       </div>
     </div>
 
@@ -793,15 +979,16 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
       <div class="card" style="margin-bottom:16px;">
         <div class="card-title">Jitterplot por tratamento</div>
         <div class="card-sub">Cada ponto = uma medição aceita. Linha horizontal = mediana por tratamento. Pontos distantes (outliers) indicam medições que merecem revisão.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
           <button class="btn btn-sm btn-primary" id="jitter-ch4-btn" onclick="setJitterGas('ch4')">CH₄</button>
           <button class="btn btn-sm btn-ghost"   id="jitter-co2-btn" onclick="setJitterGas('co2')">CO₂</button>
-          <div style="margin-left:auto;display:flex;gap:8px;">
-            <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-jitter','jitterplot')">⬇ Baixar gráfico</button>
-          </div>
+          <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-jitter','jitterplot')" style="margin-left:auto;">⬇ Baixar</button>
         </div>
-        <div style="position:relative;height:400px;"><canvas id="chart-jitter"></canvas></div>
-        <div id="jitter-outlier-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-mid);"></div>
+        <!-- Legenda de cores -->
+        <div id="jitter-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:8px 10px;background:var(--gray-light);border-radius:8px;"></div>
+        <!-- Canvas com altura responsiva -->
+        <div style="position:relative;width:100%;"><canvas id="chart-jitter" style="max-height:350px;"></canvas></div>
+        <div id="jitter-outlier-info" style="margin-top:12px;font-size:0.85rem;line-height:1.6;"></div>
       </div>
     </div>
 
@@ -1468,51 +1655,178 @@ function renderCurves() {
   info.style.display = 'none';
   document.getElementById('curve-controls').style.display = 'flex';
 
-  // Destroy old charts
   Object.values(state.curveCharts).forEach(c => { try{c.destroy()}catch(e){} });
   state.curveCharts = {};
 
   state.curves.forEach((c, idx) => {
+    // Inicializar janela de seleção = tempo total da curva
+    if (c.rows.length >= 5 && c.winSel === undefined) {
+      c.winSel = { lo: 0, hi: c.times_s[c.times_s.length - 1] };
+    }
+
     const div = document.createElement('div');
     div.className = `curve-card ${c.status}`;
     div.id = `curve-card-${idx}`;
 
     const treatTag = c.win.treatment ? `<span class="tag">${c.win.treatment}</span>` : '';
-    const noteTag = c.win.note ? `<span class="tag tag-orange">${c.win.note}</span>` : '';
-    const r2_ch4 = c.fit_ch4 ? c.fit_ch4.r2.toFixed(3) : 'N/A';
-    const r2_co2 = c.fit_co2 ? c.fit_co2.r2.toFixed(3) : 'N/A';
-    const flux_ch4 = c.flux_ch4 ? c.flux_ch4.value.toFixed(3) : 'N/A';
-    const flux_co2 = c.flux_co2 ? c.flux_co2.value.toFixed(3) : 'N/A';
+    const noteTag  = c.win.note     ? `<span class="tag tag-orange">${c.win.note}</span>` : '';
 
-    div.innerHTML = `
-      <div class="curve-header">
-        <span class="curve-num">Measurement #${c.win.num}</span>
-        <span class="curve-meta">${c.win.start} – ${c.win.stop} ${treatTag} ${noteTag}</span>
-      </div>
-      ${c.rows.length < 5 ? `<div class="alert alert-err">${c.reason || 'Insufficient data'}</div>` : `
+    if (c.rows.length < 5) {
+      div.innerHTML = `
+        <div class="curve-header">
+          <span class="curve-num">Medição #${c.win.num}</span>
+          <span class="curve-meta">${c.win.start} – ${c.win.stop} ${treatTag} ${noteTag}</span>
+        </div>
+        <div class="alert alert-err">${c.reason || '< 5 pontos de dados'}</div>
+        <div class="curve-actions">
+          <button class="btn btn-sm btn-ghost" onclick="setCurveStatus(${idx},'accepted')">✅ Accept</button>
+          <button class="btn btn-sm btn-danger" onclick="setCurveStatus(${idx},'rejected')">❌ Reject</button>
+        </div>`;
+    } else {
+      const maxT = Math.round(c.times_s[c.times_s.length - 1]);
+      div.innerHTML = `
+        <div class="curve-header">
+          <span class="curve-num">Medição #${c.win.num}</span>
+          <span class="curve-meta">${c.win.start} – ${c.win.stop} ${treatTag} ${noteTag}</span>
+        </div>
         <div class="curve-canvas-wrap">
           <canvas id="canvas-${idx}"></canvas>
         </div>
-        <div style="font-size:0.78rem;color:var(--text-mid);margin-top:6px;">
-          CH₄ slope: <span class="mono">${c.fit_ch4 ? (c.fit_ch4.slope*60).toFixed(6):'-'} ppm/min</span> &nbsp;|&nbsp;
-          CO₂ slope: <span class="mono">${c.fit_co2 ? (c.fit_co2.slope*60).toFixed(4):'-'} ppm/min</span>
+
+        <!-- SLIDER DUPLO -->
+        <div class="slider-wrap">
+          <label>🎚 Janela de regressão — arraste para ajustar</label>
+          <div class="dual-slider" id="dslider-${idx}">
+            <div class="slider-track"></div>
+            <div class="slider-range" id="srange-${idx}"></div>
+            <input type="range" id="slo-${idx}" min="0" max="${maxT}" value="0" step="1"
+              oninput="onSlider(${idx})">
+            <input type="range" id="shi-${idx}" min="0" max="${maxT}" value="${maxT}" step="1"
+              oninput="onSlider(${idx})">
+          </div>
+          <div class="slider-vals">
+            <span id="slo-val-${idx}">0 s</span>
+            <span id="shi-val-${idx}">${maxT} s</span>
+          </div>
         </div>
-        <div style="font-size:0.78rem;color:var(--text-mid);margin-top:2px;">
-          CH₄ flux: <span class="mono">${flux_ch4} mg/m²/h</span> &nbsp;|&nbsp;
-          CO₂ flux: <span class="mono">${flux_co2} mg/m²/h</span>
+
+        <!-- STATS em tempo real -->
+        <div class="curve-stats" id="cstats-${idx}">
+          <div class="stat-item"><span class="stat-lbl">CH₄ slope</span><span class="stat-val-s" id="cs-ch4s-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">CO₂ slope</span><span class="stat-val-s" id="cs-co2s-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">CH₄ R²</span><span class="stat-val-s" id="cs-ch4r-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">CO₂ R²</span><span class="stat-val-s" id="cs-co2r-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">CH₄ flux(dia)</span><span class="stat-val-s" id="cs-ch4f-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">CO₂ flux(dia)</span><span class="stat-val-s" id="cs-co2f-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">n pontos</span><span class="stat-val-s" id="cs-npts-${idx}">—</span></div>
+          <div class="stat-item"><span class="stat-lbl">Janela</span><span class="stat-val-s" id="cs-win-${idx}">—</span></div>
         </div>
-      `}
-      <div class="curve-actions">
-        <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}" onclick="setCurveStatus(${idx},'accepted')">✅ Accept</button>
-        <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}" onclick="setCurveStatus(${idx},'rejected')">❌ Reject</button>
-        <span class="r2">R² CH₄: ${r2_ch4} | CO₂: ${r2_co2}</span>
-      </div>`;
+
+        <div class="curve-actions">
+          <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}" onclick="setCurveStatus(${idx},'accepted')">✅ Aceitar</button>
+          <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}" onclick="setCurveStatus(${idx},'rejected')">❌ Rejeitar</button>
+          <button class="btn btn-sm btn-ghost" onclick="resetSlider(${idx})" title="Resetar janela para o total">↺</button>
+        </div>`;
+    }
+
     grid.appendChild(div);
 
     if (c.rows.length >= 5) {
-      setTimeout(() => drawCurveChart(idx, c), 50);
+      setTimeout(() => {
+        drawCurveChart(idx, c);
+        updateSliderTrack(idx);
+        updateCurveStats(idx);
+      }, 60 + idx * 20);
     }
   });
+}
+
+// ---- Slider duplo ----
+function onSlider(idx) {
+  const slo = document.getElementById(`slo-${idx}`);
+  const shi = document.getElementById(`shi-${idx}`);
+  let lo = parseInt(slo.value), hi = parseInt(shi.value);
+  // Garantir lo < hi com margem mínima de 10s
+  if (lo >= hi - 10) {
+    if (document.activeElement === slo) lo = hi - 10;
+    else hi = lo + 10;
+    slo.value = lo; shi.value = hi;
+  }
+  state.curves[idx].winSel = { lo, hi };
+  document.getElementById(`slo-val-${idx}`).textContent = lo + ' s';
+  document.getElementById(`shi-val-${idx}`).textContent = hi + ' s';
+  updateSliderTrack(idx);
+  updateCurveStats(idx);
+  // Redesenha o gráfico com nova janela
+  drawCurveChart(idx, state.curves[idx]);
+}
+
+function updateSliderTrack(idx) {
+  const slo = document.getElementById(`slo-${idx}`);
+  const shi = document.getElementById(`shi-${idx}`);
+  const range = document.getElementById(`srange-${idx}`);
+  if (!slo || !shi || !range) return;
+  const max = parseInt(slo.max);
+  const lo = parseInt(slo.value), hi = parseInt(shi.value);
+  range.style.left  = (lo / max * 100) + '%';
+  range.style.width = ((hi - lo) / max * 100) + '%';
+}
+
+function resetSlider(idx) {
+  const c = state.curves[idx];
+  if (!c || !c.times_s || !c.times_s.length) return;
+  const maxT = Math.round(c.times_s[c.times_s.length - 1]);
+  document.getElementById(`slo-${idx}`).value = 0;
+  document.getElementById(`shi-${idx}`).value = maxT;
+  c.winSel = { lo: 0, hi: maxT };
+  document.getElementById(`slo-val-${idx}`).textContent = '0 s';
+  document.getElementById(`shi-val-${idx}`).textContent = maxT + ' s';
+  updateSliderTrack(idx);
+  updateCurveStats(idx);
+  drawCurveChart(idx, c);
+}
+
+function getWindowedData(idx) {
+  const c = state.curves[idx];
+  const { lo, hi } = c.winSel || { lo: 0, hi: 1e9 };
+  const mask = c.times_s.map((t,i) => t >= lo && t <= hi);
+  const times_w  = c.times_s.filter((_,i) => mask[i]);
+  const ch4_w    = c.ch4_vals.filter((_,i) => mask[i]);
+  const co2_w    = c.co2_vals.filter((_,i) => mask[i]);
+  const h2o_w    = c.h2o_vals.filter((_,i) => mask[i]);
+  return { times_w, ch4_w, co2_w, h2o_w };
+}
+
+function updateCurveStats(idx) {
+  const c = state.curves[idx];
+  if (!c || c.rows.length < 5) return;
+  const { times_w, ch4_w, co2_w, h2o_w } = getWindowedData(idx);
+  if (times_w.length < 3) return;
+
+  const fit_ch4 = linearFit(times_w, ch4_w);
+  const fit_co2 = linearFit(times_w, co2_w);
+  const mean_h2o = h2o_w.reduce((a,b)=>a+b,0)/h2o_w.length;
+  const fch4 = calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o);
+  const fco2 = calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o);
+
+  // Guardar stats ajustadas na curva (para exportação)
+  c.adj = { fit_ch4, fit_co2, mean_h2o, fch4, fco2,
+            winSel: { ...c.winSel }, n_pts: times_w.length };
+
+  const r2Class = r2 => r2 >= 0.8 ? 'good' : r2 >= 0.5 ? 'warn' : 'bad';
+  const set = (id, val, cls='') => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = val; if (cls) el.className = 'stat-val-s ' + cls; }
+  };
+
+  set(`cs-ch4s-${idx}`, (fit_ch4.slope*60).toFixed(4) + ' ppm/min');
+  set(`cs-co2s-${idx}`, (fit_co2.slope*60).toFixed(4) + ' ppm/min');
+  set(`cs-ch4r-${idx}`, fit_ch4.r2.toFixed(3), r2Class(fit_ch4.r2));
+  set(`cs-co2r-${idx}`, fit_co2.r2.toFixed(3), r2Class(fit_co2.r2));
+  set(`cs-ch4f-${idx}`, fch4.mg_m2_day.toFixed(3) + ' mg/m²/d');
+  set(`cs-co2f-${idx}`, fco2.mg_m2_day.toFixed(3) + ' mg/m²/d');
+  set(`cs-npts-${idx}`, times_w.length);
+  set(`cs-win-${idx}`, `${c.winSel.lo}–${c.winSel.hi} s`);
 }
 
 function drawCurveChart(idx, c) {
@@ -1520,37 +1834,85 @@ function drawCurveChart(idx, c) {
   if (!canvas) return;
   if (state.curveCharts[idx]) { state.curveCharts[idx].destroy(); }
 
-  const labels = c.times_s.map(t => t.toFixed(0)+'s');
   const gas = state.currentGas;
-  let vals, fitSlope, fitInt, label, color;
+  let allVals, label, color;
 
   if (gas === 'ch4') {
-    vals = c.ch4_vals; fitSlope = c.fit_ch4.slope; fitInt = c.fit_ch4.intercept;
-    label = 'CH₄ corrected (ppm)'; color = '#2d6a4f';
+    allVals = c.ch4_vals; label = 'CH₄ (ppm)'; color = '#2d6a4f';
   } else if (gas === 'co2') {
-    vals = c.co2_vals; fitSlope = c.fit_co2.slope; fitInt = c.fit_co2.intercept;
-    label = 'CO₂ corrected (ppm)'; color = '#f4a261';
+    allVals = c.co2_vals; label = 'CO₂ (ppm)'; color = '#f4a261';
   } else {
-    vals = c.h2o_vals.map(v => v/1000); fitSlope = c.fit_h2o.slope/1000; fitInt = c.fit_h2o.intercept/1000;
-    label = 'H₂O (× 10³ ppm)'; color = '#3498db';
+    allVals = c.h2o_vals.map(v=>v/1000); label = 'H₂O (×10³ ppm)'; color = '#3498db';
   }
 
-  const fitLine = c.times_s.map(t => fitSlope*t + fitInt);
+  // Janela de seleção
+  const { lo, hi } = c.winSel || { lo: 0, hi: 1e9 };
 
+  // Pontos fora da janela (cinza) e dentro (colorido)
+  const outsideData = c.times_s.map((t,i) => t < lo || t > hi ? {x:t, y:allVals[i]} : null).filter(Boolean);
+  const insideData  = c.times_s.map((t,i) => t >= lo && t <= hi ? {x:t, y:allVals[i]} : null).filter(Boolean);
+
+  // Regressão SOMENTE dentro da janela
+  const times_w = c.times_s.filter(t => t >= lo && t <= hi);
+  const vals_w  = allVals.filter((_,i) => c.times_s[i] >= lo && c.times_s[i] <= hi);
+  const fit = linearFit(times_w, vals_w);
+
+  // Linha de fit: do lo ao hi
+  const fitData = times_w.length >= 2
+    ? [{x: times_w[0], y: fit.slope*times_w[0]+fit.intercept},
+       {x: times_w[times_w.length-1], y: fit.slope*times_w[times_w.length-1]+fit.intercept}]
+    : [];
+
+  // Linhas verticais da janela usando annotation plugin alternativo (plugin manual via dataset)
   state.curveCharts[idx] = new Chart(canvas, {
     type: 'scatter',
     data: {
       datasets: [
-        { label, data: c.times_s.map((t,i)=>({x:t,y:vals[i]})), backgroundColor: color+'80', pointRadius: 2 },
-        { label: 'Linear fit', data: c.times_s.map((t,i)=>({x:t,y:fitLine[i]})), type:'line', borderColor: color, pointRadius:0, borderWidth:2, tension:0 }
+        {
+          label: 'Fora da janela',
+          data: outsideData,
+          backgroundColor: '#cccccc55',
+          borderColor: '#cccccc',
+          pointRadius: 2,
+        },
+        {
+          label,
+          data: insideData,
+          backgroundColor: color + 'aa',
+          borderColor: color,
+          pointRadius: 3,
+        },
+        {
+          label: 'Regressão (janela)',
+          data: fitData,
+          type: 'line',
+          borderColor: color,
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0,
+          borderDash: [],
+        }
       ]
     },
     options: {
       animation: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.x.toFixed(0)}s: ${ctx.parsed.y.toFixed(4)}`
+          }
+        }
+      },
       scales: {
-        x: { title: { display: true, text: 'Time (s)', font:{size:10} }, ticks:{font:{size:9}} },
-        y: { title: { display: true, text: label, font:{size:10} }, ticks:{font:{size:9}} }
+        x: {
+          title: { display: true, text: 'Tempo (s)', font:{size:9} },
+          ticks: { font:{size:8} }
+        },
+        y: {
+          title: { display: true, text: label, font:{size:9} },
+          ticks: { font:{size:8} }
+        }
       }
     }
   });
@@ -1573,6 +1935,17 @@ function setCurveStatus(idx, status) {
 }
 
 function acceptAll() { state.curves.forEach((_,i) => setCurveStatus(i,'accepted')); }
+
+function applyAndGoResults() {
+  // Para cada curva aceita sem adj, inicializa adj com o fit completo
+  state.curves.forEach((c, idx) => {
+    if (c.status === 'accepted' && c.rows.length >= 5 && !c.adj) {
+      updateCurveStats(idx);
+    }
+  });
+  computeResults();
+  showSection('results');
+}
 function rejectAll() { state.curves.forEach((_,i) => setCurveStatus(i,'rejected')); }
 
 // ============================================================
@@ -1600,16 +1973,24 @@ function median(arr){if(!arr.length)return 0;const s=[...arr].sort((a,b)=>a-b),m
 
 function computeResults() {
   state.results = state.curves.filter(c=>c.status==='accepted'&&c.rows.length>=5).map(c=>{
-    const mean_h2o=c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
-    const fch4=calcFluxDay(c.fit_ch4.slope,c.win,M_CH4,mean_h2o);
-    const fco2=calcFluxDay(c.fit_co2.slope,c.win,M_CO2,mean_h2o);
+    // Usa stats ajustadas pelo slider se disponível, senão usa o fit original
+    const adj = c.adj;
+    const fit_ch4 = adj ? adj.fit_ch4 : c.fit_ch4;
+    const fit_co2 = adj ? adj.fit_co2 : c.fit_co2;
+    const mean_h2o = adj ? adj.mean_h2o : c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
+    const fch4 = adj ? adj.fch4 : calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o);
+    const fco2 = adj ? adj.fco2 : calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o);
+    const winSel = adj ? adj.winSel : {lo:0, hi:Math.round(c.times_s[c.times_s.length-1])};
+    const n_pts_used = adj ? adj.n_pts : c.rows.length;
     return {num:c.win.num,date:c.win.date,start:c.win.start,stop:c.win.stop,
       treatment:c.win.treatment||'N/A',
       flux_ch4_day:fch4.mg_m2_day,flux_co2_day:fco2.mg_m2_day,
       flux_ch4_h:fch4.mg_m2_h,flux_co2_h:fco2.mg_m2_h,
-      r2_ch4:c.fit_ch4.r2,r2_co2:c.fit_co2.r2,
-      slope_ch4:c.fit_ch4.slope,slope_co2:c.fit_co2.slope,
-      mean_h2o,n_pts:c.rows.length,note:c.win.note||''};
+      r2_ch4:fit_ch4.r2,r2_co2:fit_co2.r2,
+      slope_ch4:fit_ch4.slope,slope_co2:fit_co2.slope,
+      mean_h2o,n_pts:c.rows.length,n_pts_used,
+      win_lo:winSel.lo, win_hi:winSel.hi,
+      note:c.win.note||''};
   });
   updateResultsUI();
 }
@@ -1703,34 +2084,169 @@ function renderJitter(gas){
   if(state.mainCharts['jitter'])state.mainCharts['jitter'].destroy();
   const canvas=document.getElementById('chart-jitter');
   if(!canvas||!state.results.length)return;
+
   const key=gas==='ch4'?'flux_ch4_day':'flux_co2_day';
-  const M=gas==='ch4'?'CH\u2084':'CO\u2082';
-  const palette=['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12'];
+  const Mlabel=gas==='ch4'?'CH\u2084':'CO\u2082';
+  const palette=['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12','#e67e22','#16a085','#8e44ad'];
   const treatments=[...new Set(state.results.map(r=>r.treatment))];
-  function iqrBounds(arr){const s=[...arr].sort((a,b)=>a-b);const q1=s[Math.floor(s.length*0.25)],q3=s[Math.floor(s.length*0.75)],iqr=q3-q1;return{lo:q1-1.5*iqr,hi:q3+1.5*iqr};}
-  const datasets=[];const outlierLabels=[];
+  const N=treatments.length;
+
+  // Detecção de outlier IQR
+  function iqrBounds(arr){
+    const s=[...arr].sort((a,b)=>a-b);
+    if(s.length<4) return {lo:-Infinity,hi:Infinity};
+    const q1=s[Math.floor(s.length*0.25)],q3=s[Math.floor(s.length*0.75)],iqr=q3-q1;
+    return{lo:q1-1.5*iqr,hi:q3+1.5*iqr};
+  }
+
+  // Usar eixo CATEGÓRICO (type:'category') — resolve o problema de labels sumindo
+  // Cada tratamento é um label string, cada ponto tem x=nome do tratamento + jitter visual via offset
+  // Para Chart.js com type:bar categórico + scatter, usamos um dataset por tratamento
+
+  const datasets=[];
+  const outlierLabels=[];
+  const isMobile = window.innerWidth < 700;
+  const ptRadius = isMobile ? 8 : 9;
+
   treatments.forEach((t,ti)=>{
     const rows=state.results.filter(r=>r.treatment===t);
     const vals=rows.map(r=>r[key]).filter(v=>isFinite(v));
-    const med=median(vals),bounds=iqrBounds(vals),color=palette[ti%palette.length];
-    const jData=rows.map((r,i)=>{
-      const v=r[key],isOut=isFinite(v)&&(v<bounds.lo||v>bounds.hi);
-      if(isOut)outlierLabels.push(`#${r.num} ${t}: ${v.toFixed(3)}`);
-      const jx=ti+(i%2===0?-0.12:0.12)*(0.5+(i*0.13)%0.5);
-      return{x:jx,y:v,label:`#${r.num} ${r.start}`,outlier:isOut};
+    if(!vals.length) return;
+    const med=median(vals);
+    const bounds=iqrBounds(vals);
+    const color=palette[ti%palette.length];
+
+    // Jitter: distribui os pontos horizontalmente em torno da posição do label
+    // Usamos um truque: dataset type='bar' para a mediana (invisível, só para posicionar)
+    // e datasets de scatter com x como índice numérico, mapeado para labels via callback
+
+    rows.forEach((r,i)=>{
+      const v=r[key];
+      if(!isFinite(v)) return;
+      const isOut=v<bounds.lo||v>bounds.hi;
+      if(isOut) outlierLabels.push(`#${r.num} ${t}: ${v.toFixed(2)} mg/m²/d`);
+
+      // jitter horizontal: spread os pontos de -0.3 a +0.3 em torno do índice
+      const total=rows.length;
+      const spread=Math.min(0.35, 0.12*total);
+      const jx = total<=1 ? ti : ti - spread + (i/(total-1))*2*spread;
+
+      datasets.push({
+        label: i===0&&!isOut ? t : undefined,  // só o primeiro ponto leva o label do tratamento
+        data:[{x:jx, y:v, label:`#${r.num} ${r.start}`}],
+        backgroundColor: isOut ? '#e74c3ccc' : color+'cc',
+        borderColor: isOut ? '#e74c3c' : color,
+        borderWidth: isOut ? 2 : 1.5,
+        pointRadius: isOut ? ptRadius+2 : ptRadius,
+        pointHoverRadius: ptRadius+4,
+        pointStyle: isOut ? 'triangle' : 'circle',
+        type:'scatter',
+        showInLegend: false,
+      });
     });
-    datasets.push({label:t,data:jData.filter(d=>!d.outlier).map(d=>({x:d.x,y:d.y,label:d.label})),backgroundColor:color+'cc',borderColor:color,borderWidth:1,pointRadius:7,pointHoverRadius:10,type:'scatter'});
-    if(jData.some(d=>d.outlier))datasets.push({label:t+' outlier',data:jData.filter(d=>d.outlier).map(d=>({x:d.x,y:d.y,label:d.label})),backgroundColor:'#e74c3ccc',borderColor:'#e74c3c',borderWidth:2,pointRadius:9,pointStyle:'triangle',type:'scatter'});
-    datasets.push({label:`${t} med`,data:[{x:ti-0.35,y:med},{x:ti+0.35,y:med}],borderColor:color,borderWidth:3,pointRadius:0,type:'line',tension:0});
+
+    // Linha de mediana horizontal para este tratamento
+    const spread=0.38;
+    datasets.push({
+      label:`${t} mediana`,
+      data:[{x:ti-spread,y:med},{x:ti+spread,y:med}],
+      borderColor:color,
+      borderWidth:3,
+      pointRadius:0,
+      type:'line',
+      tension:0,
+      showInLegend:false,
+    });
   });
-  state.mainCharts['jitter']=new Chart(canvas,{type:'scatter',data:{datasets},options:{animation:false,
-    plugins:{legend:{display:false},title:{display:true,text:`Jitterplot \u2014 ${M} por tratamento (mg m\u207b\u00b2 dia\u207b\u00b9)`,font:{size:13}},
-      tooltip:{callbacks:{label:ctx=>`${ctx.raw.label||''}: ${ctx.parsed.y.toFixed(4)}`}}},
-    scales:{x:{type:'linear',min:-0.6,max:treatments.length-0.4,ticks:{callback:v=>{const i=Math.round(v);return treatments[i]||'';},stepSize:1},title:{display:true,text:'Tratamento'}},
-      y:{title:{display:true,text:`mg ${M} m\u207b\u00b2 dia\u207b\u00b9`}}}}});
+
+  state.mainCharts['jitter']=new Chart(canvas,{
+    type:'scatter',
+    data:{datasets},
+    options:{
+      animation:false,
+      responsive:true,
+      maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        title:{
+          display:true,
+          text:`Jitterplot \u2014 ${Mlabel} por tratamento (mg m\u207b\u00b2 dia\u207b\u00b9)`,
+          font:{size:isMobile?11:13},
+          padding:{bottom:8}
+        },
+        tooltip:{
+          callbacks:{
+            label:ctx=>{
+              const d=ctx.raw;
+              return d&&d.label ? `${d.label}: ${ctx.parsed.y.toFixed(3)}` : ctx.parsed.y.toFixed(3);
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          type:'linear',
+          min:-0.6,
+          max:N-0.4,
+          ticks:{
+            // Mostrar label do tratamento em cada posição inteira
+            callback:(v)=>{
+              const i=Math.round(v);
+              // só mostra se estiver muito perto do inteiro
+              if(Math.abs(v-i)<0.1 && i>=0 && i<treatments.length) return treatments[i];
+              return '';
+            },
+            stepSize:1,
+            autoSkip:false,
+            maxTicksLimit:N+1,
+            font:{size:isMobile?9:11},
+          },
+          title:{display:true,text:'Tratamento',font:{size:isMobile?10:12}},
+          grid:{display:false},
+        },
+        y:{
+          title:{display:true,text:`mg ${Mlabel} m\u207b\u00b2 dia\u207b\u00b9`,font:{size:isMobile?10:12}},
+          ticks:{font:{size:isMobile?9:11}},
+          grid:{color:'#e0e0e0'},
+        }
+      }
+    }
+  });
+
+  // Legenda de cores manual
+  renderJitterLegend(treatments, palette);
+
+  // Info de outliers
   const infoEl=document.getElementById('jitter-outlier-info');
-  if(outlierLabels.length){infoEl.innerHTML=`\u26a0\ufe0f <strong>${outlierLabels.length} outlier(s) IQR:</strong><br>`+outlierLabels.map(l=>`&nbsp;&nbsp;\u25b6 ${l}`).join('<br>');infoEl.style.color='#c0392b';}
-  else{infoEl.innerHTML='\u2705 Nenhum outlier pelo crit\u00e9rio IQR.';infoEl.style.color='#2d9e5f';}
+  if(outlierLabels.length){
+    infoEl.innerHTML='<strong>\u26a0\ufe0f Outliers IQR:</strong><br>'+outlierLabels.map(l=>`<span style="color:#c0392b">\u25b6 ${l}</span>`).join('<br>');
+    infoEl.style.color='#c0392b';
+  } else {
+    infoEl.innerHTML='\u2705 Nenhum outlier pelo crit\u00e9rio IQR.';
+    infoEl.style.color='#2d9e5f';
+  }
+}
+
+function renderJitterLegend(treatments, palette){
+  const el=document.getElementById('jitter-legend');
+  if(!el) return;
+  el.innerHTML='';
+  treatments.forEach((t,i)=>{
+    const color=palette[i%palette.length];
+    const item=document.createElement('div');
+    item.style.cssText='display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:700;color:var(--text-dark);';
+    item.innerHTML=`<span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;"></span>${t}`;
+    el.appendChild(item);
+  });
+  // Outlier
+  const out=document.createElement('div');
+  out.style.cssText='display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:700;color:#e74c3c;';
+  out.innerHTML='<span style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:12px solid #e74c3c;display:inline-block;flex-shrink:0;"></span>Outlier';
+  el.appendChild(out);
+  const med=document.createElement('div');
+  med.style.cssText='display:flex;align-items:center;gap:5px;font-size:0.8rem;color:var(--text-mid);';
+  med.innerHTML='<span style="width:14px;height:3px;background:#555;display:inline-block;flex-shrink:0;"></span>Mediana';
+  el.appendChild(med);
 }
 
 function renderResultsTable(){
@@ -1759,8 +2275,8 @@ function downloadChart(canvasId,filename){
 function exportExcel(){
   if(typeof XLSX==='undefined'){alert('Aguarde o SheetJS.');return;}
   const treatments=[...new Set(state.results.map(r=>r.treatment))];
-  const h1=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','mean_H2O_ppm','n_points','Note'];
-  const d1=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day,r.flux_co2_day,r.flux_ch4_h,r.flux_co2_h,r.r2_ch4,r.r2_co2,r.slope_ch4,r.slope_co2,r.mean_h2o,r.n_pts,r.note]);
+  const h1=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','mean_H2O_ppm','n_points_total','n_points_used','win_start_s','win_end_s','Note'];
+  const d1=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day,r.flux_co2_day,r.flux_ch4_h,r.flux_co2_h,r.r2_ch4,r.r2_co2,r.slope_ch4,r.slope_co2,r.mean_h2o,r.n_pts,r.n_pts_used,r.win_lo,r.win_hi,r.note]);
   const h2=['Treatment','n','CH4_mean_mg_m2_day','CH4_sd','CH4_min','CH4_max','CO2_mean_mg_m2_day','CO2_sd','CO2_min','CO2_max'];
   const d2=treatments.map(t=>{
     const rows=state.results.filter(r=>r.treatment===t);
@@ -1776,8 +2292,8 @@ function exportExcel(){
 }
 
 function exportCSV(){
-  const h=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','n_points','Note'];
-  const rows=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day?.toFixed(6),r.flux_co2_day?.toFixed(6),r.flux_ch4_h?.toFixed(6),r.flux_co2_h?.toFixed(6),r.r2_ch4?.toFixed(6),r.r2_co2?.toFixed(6),r.slope_ch4?.toExponential(8),r.slope_co2?.toExponential(8),r.n_pts,r.note]);
+  const h=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','n_points_total','n_points_used','win_start_s','win_end_s','Note'];
+  const rows=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day?.toFixed(6),r.flux_co2_day?.toFixed(6),r.flux_ch4_h?.toFixed(6),r.flux_co2_h?.toFixed(6),r.r2_ch4?.toFixed(6),r.r2_co2?.toFixed(6),r.slope_ch4?.toExponential(8),r.slope_co2?.toExponential(8),r.n_pts,r.n_pts_used,r.win_lo,r.win_hi,r.note]);
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download='carbon_flux_results.csv';a.click();
 }
 
