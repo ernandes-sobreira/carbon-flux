@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carbon-Flux | LGR Analyzer Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+  --green-dark: #1a3a2a;
+  --green-mid: #2d6a4f;
+  --green-light: #52b788;
+  --green-pale: #d8f3dc;
+  --accent: #f4a261;
+  --accent2: #e76f51;
+  --white: #ffffff;
+  --off-white: #f8fdf9;
+  --gray-light: #eef4f0;
+  --gray-mid: #b7d5c0;
+  --text-dark: #152620;
+  --text-mid: #3d6356;
+  --shadow: 0 2px 12px rgba(26,58,42,0.10);
+  --shadow-lg: 0 8px 32px rgba(26,58,42,0.16);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Lato', sans-serif;
+  background: var(--off-white);
+  color: var(--text-dark);
+  min-height: 100vh;
+}
+
+/* ---- TOP BAR ---- */
+#topbar {
+  background: var(--green-dark);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  height: 62px;
+  gap: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+}
+#topbar .logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  color: var(--white);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+#topbar .logo span { color: var(--green-light); }
+#topbar nav { display: flex; gap: 4px; flex: 1; }
+#topbar nav button {
+  background: none;
+  border: none;
+  color: var(--gray-mid);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-transform: uppercase;
+}
+#topbar nav button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+#topbar nav button.active { background: var(--green-mid); color: #fff; }
+#topbar .badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ---- MAIN LAYOUT ---- */
+main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
+
+/* ---- SECTIONS ---- */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ---- CARDS ---- */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+.card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.25rem;
+  color: var(--green-dark);
+  margin-bottom: 6px;
+}
+.card-sub {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  margin-bottom: 20px;
+}
+
+/* ---- HERO SECTION ---- */
+#hero-banner {
+  background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+  border-radius: var(--radius);
+  padding: 40px 44px;
+  color: #fff;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+#hero-banner .h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.1rem;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+#hero-banner .h1 em { color: var(--green-light); font-style: normal; }
+#hero-banner p { font-size: 1rem; color: var(--green-pale); max-width: 560px; }
+#hero-banner .icon-gas { font-size: 4rem; flex-shrink: 0; }
+
+/* ---- SCIENCE QUESTION ---- */
+.sci-form label { 
+  display: block; 
+  font-weight: 700; 
+  font-size: 0.88rem; 
+  color: var(--text-mid); 
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.sci-form textarea, .sci-form input[type=text] {
+  width: 100%;
+  border: 1.5px solid var(--gray-mid);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: 'Lato', sans-serif;
+  font-size: 1rem;
+  color: var(--text-dark);
+  background: var(--gray-light);
+  resize: vertical;
+  transition: border 0.18s;
+  max-width: 860px;
+}
+.sci-form textarea:focus, .sci-form input[type=text]:focus { 
+  outline: none; border-color: var(--green-mid); 
+  background: #fff;
+}
+.sci-form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+.sci-form .form-group { display: flex; flex-direction: column; gap: 6px; }
+.sci-form select {
+  border: 1.5px solid var(--gray-mid);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.96rem;
+  background: var(--gray-light);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+.sci-form select:focus { outline: none; border-color: var(--green-mid); }
+
+/* ---- BTN ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: var(--radius-sm);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.93rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--green-mid); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent2); }
+.btn-ghost {
+  background: transparent;
+  color: var(--green-mid);
+  border: 1.5px solid var(--green-mid);
+}
+.btn-ghost:hover { background: var(--green-pale); }
+.btn-sm { padding: 7px 14px; font-size: 0.84rem; }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+
+/* ---- UPLOAD ZONE ---- */
+.upload-zone {
+  border: 2.5px dashed var(--gray-mid);
+  border-radius: var(--radius);
+  padding: 44px 32px;
+  text-align: center;
+  background: var(--gray-light);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--green-mid);
+  background: var(--green-pale);
+}
+.upload-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-zone .icon { font-size: 2.8rem; margin-bottom: 10px; }
+.upload-zone h3 { font-family: 'DM Serif Display', serif; font-size: 1.15rem; color: var(--green-dark); }
+.upload-zone p { font-size: 0.88rem; color: var(--text-mid); margin-top: 6px; }
+
+/* ---- FILE LIST ---- */
+.file-list { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--green-pale);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  font-size: 0.92rem;
+}
+.file-item .ficon { font-size: 1.4rem; }
+.file-item .fname { font-weight: 700; color: var(--green-dark); flex: 1; }
+.file-item .fsize { color: var(--text-mid); font-size: 0.83rem; }
+.file-item .fstatus { margin-left: auto; }
+.status-ok { color: #2d9e5f; font-weight: 700; font-size: 0.82rem; }
+.status-err { color: #e74c3c; font-weight: 700; font-size: 0.82rem; }
+
+/* ---- TIMES TABLE ---- */
+.times-editor {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+.times-editor table {
+  border-collapse: collapse;
+  font-size: 0.87rem;
+  min-width: 900px;
+  width: 100%;
+}
+.times-editor th {
+  background: var(--green-mid);
+  color: #fff;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.times-editor td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--gray-light);
+  vertical-align: middle;
+}
+.times-editor tr:nth-child(even) td { background: var(--gray-light); }
+.times-editor input[type=text], .times-editor input[type=time] {
+  border: 1.5px solid var(--gray-mid);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.84rem;
+  background: #fff;
+  font-family: 'DM Mono', monospace;
+  width: 100%;
+}
+.times-editor input:focus { outline: none; border-color: var(--green-mid); }
+.badge-treat {
+  background: var(--green-pale);
+  color: var(--green-dark);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+/* ---- CURVE VIEWER ---- */
+.curve-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.curve-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 18px 14px;
+  border: 2px solid transparent;
+  transition: border 0.18s;
+}
+.curve-card.accepted { border-color: #2d9e5f; }
+.curve-card.rejected { border-color: #e74c3c; opacity: 0.65; }
+.curve-card .curve-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.curve-card .curve-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  background: var(--green-dark);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.curve-card .curve-meta {
+  font-size: 0.78rem;
+  color: var(--text-mid);
+}
+.curve-canvas-wrap { position: relative; width: 100%; height: 170px; }
+.curve-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+.curve-actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.curve-actions .r2 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--text-mid);
+  margin-left: auto;
+}
+
+/* ---- RESULTS ---- */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.stat-card .stat-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  color: var(--green-dark);
+  display: block;
+}
+.stat-card .stat-unit {
+  font-size: 0.8rem;
+  color: var(--text-mid);
+  margin-top: 2px;
+}
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 10px;
+}
+.chart-full { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
+.chart-full canvas { max-height: 380px; }
+
+/* ---- CORRECTION BOX ---- */
+.correction-box {
+  background: #fffbf0;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.correction-box h4 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem;
+  color: var(--green-dark);
+  margin-bottom: 10px;
+}
+.correction-box .formula {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  background: #fff;
+  border: 1.5px solid #f4d1a0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  color: #7c4c00;
+}
+.correction-box p { font-size: 0.88rem; color: var(--text-mid); line-height: 1.6; }
+
+/* ---- PROGRESS ---- */
+.progress-bar { background: var(--gray-light); border-radius: 99px; height: 8px; overflow: hidden; margin-top: 8px; }
+.progress-fill { background: var(--green-mid); height: 100%; border-radius: 99px; transition: width 0.4s; }
+
+/* ---- TABS ---- */
+.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--gray-light); margin-bottom: 24px; }
+.tab-btn {
+  padding: 9px 20px;
+  background: none;
+  border: none;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tab-btn.active { color: var(--green-mid); border-bottom-color: var(--green-mid); }
+.tab-btn:hover { color: var(--green-dark); }
+
+/* ---- ALERTS ---- */
+.alert {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.alert-warn { background: #fff8e1; border-left: 4px solid #f0a500; color: #7c5500; }
+.alert-info { background: #e8f5e9; border-left: 4px solid #43a047; color: #1b5e20; }
+.alert-err { background: #fdecea; border-left: 4px solid #e53935; color: #7f1f1f; }
+
+/* ---- UTILITY ---- */
+.flex { display: flex; }
+.gap-12 { gap: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  color: var(--green-dark);
+  margin-bottom: 4px;
+}
+.section-sub { font-size: 0.92rem; color: var(--text-mid); margin-bottom: 28px; }
+.mono { font-family: 'DM Mono', monospace; }
+.tag {
+  display: inline-block;
+  background: var(--green-pale);
+  color: var(--green-dark);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.tag-orange {
+  background: #fff0e0;
+  color: #a04400;
+}
+.divider { border: none; border-top: 1.5px solid var(--gray-light); margin: 22px 0; }
+.results-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.results-table th {
+  background: var(--green-dark); color: #fff;
+  padding: 10px 14px; text-align: left;
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.results-table td { padding: 9px 14px; border-bottom: 1px solid var(--gray-light); }
+.results-table tr:nth-child(even) td { background: var(--gray-light); }
+.results-table .pos { color: #2d9e5f; font-weight: 700; }
+.results-table .neg { color: #e74c3c; font-weight: 700; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 800px) {
+  main { padding: 20px 14px 40px; }
+  #topbar { padding: 0 16px; gap: 8px; }
+  #topbar nav button { padding: 6px 10px; font-size: 0.78rem; }
+  #hero-banner { flex-direction: column; padding: 28px 22px; }
+  .curve-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">Carbon<span>-Flux</span></div>
+  <nav>
+    <button class="active" onclick="showSection('project')">🔬 Project</button>
+    <button onclick="showSection('upload')">📂 Data</button>
+    <button onclick="showSection('curves')">📈 Curves</button>
+    <button onclick="showSection('results')">📊 Results</button>
+  </nav>
+  <div class="badge" id="status-badge">LGR · Tiger Correction ON</div>
+</div>
+
+<main>
+
+<!-- ============ SECTION: PROJECT ============ -->
+<div class="section active" id="section-project">
+  <div id="hero-banner">
+    <div class="icon-gas">🌿</div>
+    <div>
+      <div class="h1">Carbon-Flux <em>Analyzer</em></div>
+      <p>Scientific platform for LOS GATOS Research (LGR) analyzer data. Parses raw TXT files, applies instrument calibration correction, selects incubation windows, calculates CH₄, CO₂ and H₂O fluxes, and visualizes results across treatments.</p>
+    </div>
+  </div>
+
+  <div class="correction-box">
+    <h4>⚠️ Instrument Calibration Correction — Tiger Analyzer (active)</h4>
+    <p>Ralf Aben (Radboud University) identified a substantial calibration deviation in the Tiger microportable CO₂/CH₄ analyzer. The following linear corrections are applied to all <strong>dry-mole-fraction</strong> readings before any flux calculation:</p>
+    <div class="formula">CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000</div>
+    <div class="formula">CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000</div>
+    <p>These equations were derived from the Example_of_correction.xlsx file (R² = 1.000 for both). The correction is linear, using the dry-mole-fraction columns ([CH₄]d_ppm and [CO2]d_ppm) as input. The CO₂ deviation is substantial (~12.5% bias in slope); the CH₄ deviation is smaller (~2.6%). H₂O is not corrected by this equation. Always use corrected values for flux calculations.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Scientific Question</div>
+    <div class="card-sub">Define your research question and experimental context. This information will appear in exported reports.</div>
+    <div class="sci-form">
+      <div class="form-group">
+        <label>Main research / scientific question</label>
+        <textarea id="sci-question" rows="3" placeholder="e.g. Does wildfire ash addition to Pantanal floodplain water bodies increase CH₄ and CO₂ efflux relative to control mesocosms?"></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Project / Experiment name</label>
+          <input type="text" id="proj-name" placeholder="e.g. BRASA 2025 — Mesocosm GHG">
+        </div>
+        <div class="form-group">
+          <label>Principal Investigator</label>
+          <input type="text" id="pi-name" placeholder="e.g. Ernandes Sobreira">
+        </div>
+        <div class="form-group">
+          <label>Institution</label>
+          <input type="text" id="pi-inst" placeholder="e.g. UNEMAT / Radboud University">
+        </div>
+        <div class="form-group">
+          <label>Measurement instrument</label>
+          <select id="instrument">
+            <option value="lgr">LOS GATOS (LGR) — Microportable GHG Analyzer</option>
+            <option value="tiger">Tiger Microportable CO₂/CH₄ (+ Tiger Correction)</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Apply calibration correction?</label>
+          <select id="apply-corr">
+            <option value="yes">Yes — apply Tiger linear correction (recommended)</option>
+            <option value="no">No — use raw values (not recommended)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Gases to analyze</label>
+          <select id="gases-sel">
+            <option value="ch4_co2">CH₄ + CO₂</option>
+            <option value="ch4">CH₄ only</option>
+            <option value="co2">CO₂ only</option>
+            <option value="all">CH₄ + CO₂ + H₂O</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-16">
+        <button class="btn btn-primary" onclick="saveProject()">💾 Save project settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION: UPLOAD ============ -->
+<div class="section" id="section-upload">
+  <div class="section-title">Data Upload</div>
+  <div class="section-sub">Upload the raw TXT file from the LGR analyzer and the Times.xlsx file with incubation window metadata. Do not modify the raw TXT — it is read as-is from the instrument.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+    <div class="card">
+      <div class="card-title">📄 LGR Raw Data (.txt)</div>
+      <div class="card-sub">Instrument output — do not alter the file format</div>
+      <div class="upload-zone" id="zone-txt">
+        <input type="file" id="input-txt" accept=".txt" onchange="handleTxtUpload(event)">
+        <div class="icon">🗂️</div>
+        <h3>Drop TXT file here</h3>
+        <p>micro_YYYY-MM-DD_f0000.txt format</p>
+      </div>
+      <div class="file-list" id="list-txt"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Times / Metadata (.xlsx)</div>
+      <div class="card-sub">Incubation windows, chamber dimensions, treatments</div>
+      <div class="upload-zone" id="zone-xlsx">
+        <input type="file" id="input-xlsx" accept=".xlsx,.xls,.csv" onchange="handleXlsxUpload(event)">
+        <div class="icon">🕐</div>
+        <h3>Drop Times.xlsx here</h3>
+        <p>Used_start, used_stop, Ta, chamber geometry, treatments</p>
+      </div>
+      <div class="file-list" id="list-xlsx"></div>
+    </div>
+  </div>
+
+  <div class="card" id="manual-params-card">
+    <div class="card-title">⚙️ Chamber & Environmental Parameters</div>
+    <div class="card-sub">These values will be overridden by Times.xlsx if uploaded. They are used as defaults for manual entry.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:4px;" class="sci-form">
+      <div class="form-group">
+        <label>Chamber diameter (cm)</label>
+        <input type="text" id="p-diam" value="15.5">
+      </div>
+      <div class="form-group">
+        <label>Chamber height (cm)</label>
+        <input type="text" id="p-height" value="29.5">
+      </div>
+      <div class="form-group">
+        <label>Chamber shape</label>
+        <select id="p-shape">
+          <option value="round">Round / Cylindrical</option>
+          <option value="rect">Rectangular</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Air temperature (°C)</label>
+        <input type="text" id="p-ta" value="19.4">
+      </div>
+      <div class="form-group">
+        <label>Atmospheric pressure (hPa)</label>
+        <input type="text" id="p-press" value="1009">
+      </div>
+      <div class="form-group">
+        <label>Tube length (cm)</label>
+        <input type="text" id="p-tube" value="20">
+      </div>
+    </div>
+    <hr class="divider">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;" class="sci-form">
+      <div class="form-group">
+        <label>Incubation start (HH:MM:SS)</label>
+        <input type="text" id="p-start" placeholder="13:03:30">
+      </div>
+      <div class="form-group">
+        <label>Incubation stop (HH:MM:SS)</label>
+        <input type="text" id="p-stop" placeholder="13:05:00">
+      </div>
+      <div class="form-group">
+        <label>Treatment / Plot label</label>
+        <input type="text" id="p-treat" placeholder="e.g. plot, sloot, control">
+      </div>
+      <div class="form-group">
+        <label>Measurement date</label>
+        <input type="text" id="p-date" placeholder="2025-08-26">
+      </div>
+    </div>
+    <div class="mt-16 flex gap-12">
+      <button class="btn btn-ghost" onclick="addManualWindow()">+ Add measurement window</button>
+      <button class="btn btn-primary" onclick="processData()">⚙️ Process all data</button>
+    </div>
+  </div>
+
+  <div id="data-preview" style="display:none;" class="card">
+    <div class="card-title">Data Preview</div>
+    <div id="preview-content"></div>
+  </div>
+</div>
+
+<!-- ============ SECTION: CURVES ============ -->
+<div class="section" id="section-curves">
+  <div class="section-title">Curve Inspection</div>
+  <div class="section-sub">Review each incubation window. Accept curves with a clear linear trend. Reject anomalous, bubbly, or disturbed measurements.</div>
+
+  <div class="alert alert-info" id="curves-info">
+    📂 Upload and process your data in the <strong>Data</strong> tab to see curves here.
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;" id="curve-controls" style="display:none">
+    <button class="btn btn-sm btn-primary" onclick="acceptAll()">✅ Accept all</button>
+    <button class="btn btn-sm btn-danger" onclick="rejectAll()">❌ Reject all</button>
+    <button class="btn btn-sm btn-ghost" onclick="showGas('ch4')">Show CH₄</button>
+    <button class="btn btn-sm btn-ghost" onclick="showGas('co2')">Show CO₂</button>
+    <button class="btn btn-sm btn-ghost" onclick="showGas('h2o')">Show H₂O</button>
+  </div>
+
+  <div class="curve-grid" id="curve-grid"></div>
+</div>
+
+<!-- ============ SECTION: RESULTS ============ -->
+<div class="section" id="section-results">
+  <div class="section-title">Flux Results & Comparisons</div>
+  <div class="section-sub">Calculated fluxes from accepted incubation windows, with correction applied. Compare treatments and export data.</div>
+
+  <div class="alert alert-info" id="results-info">
+    📈 Accept curves in the <strong>Curves</strong> tab to generate flux results here.
+  </div>
+
+  <div id="results-content" style="display:none;">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('tab-summary')">Summary</button>
+      <button class="tab-btn" onclick="showTab('tab-table')">Data table</button>
+      <button class="tab-btn" onclick="showTab('tab-chart')">Charts</button>
+      <button class="tab-btn" onclick="showTab('tab-method')">Methods</button>
+    </div>
+
+    <div id="tab-summary" class="tab-pane">
+      <div class="results-grid" id="stat-cards"></div>
+      <div class="chart-full">
+        <canvas id="chart-flux-comparison" height="120"></canvas>
+      </div>
+    </div>
+    <div id="tab-table" class="tab-pane" style="display:none;">
+      <div style="overflow-x:auto;">
+        <table class="results-table" id="results-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Date</th><th>Start</th><th>Stop</th><th>Treatment</th>
+              <th>CH₄ flux (mg/m²/h)</th><th>CO₂ flux (mg/m²/h)</th>
+              <th>CH₄ R²</th><th>CO₂ R²</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+      <div class="mt-16">
+        <button class="btn btn-accent" onclick="exportCSV()">⬇️ Export CSV</button>
+      </div>
+    </div>
+    <div id="tab-chart" class="tab-pane" style="display:none;">
+      <div class="chart-full">
+        <canvas id="chart-ch4-treat" height="130"></canvas>
+      </div>
+      <div class="chart-full">
+        <canvas id="chart-co2-treat" height="130"></canvas>
+      </div>
+    </div>
+    <div id="tab-method" class="tab-pane" style="display:none;">
+      <div class="card">
+        <div class="card-title">Methods Description (for manuscript)</div>
+        <div id="methods-text" style="line-height:1.8;font-size:0.96rem;color:var(--text-dark);">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  project: {},
+  txtData: null,       // parsed rows from LGR txt
+  timesData: null,     // parsed rows from Times.xlsx
+  windows: [],         // measurement windows
+  curves: [],          // curve objects with status
+  results: [],         // final flux results
+  currentGas: 'ch4',
+  curveCharts: {},     // Chart.js instances
+  mainCharts: {}
+};
+
+// Correction coefficients — verified against Example_of_correction.xlsx (R²=1.000)
+const CORR = {
+  CH4_slope: 0.97377900,
+  CH4_intercept: 0.01870000,
+  CO2_slope: 0.86616349,
+  CO2_intercept: 5.26790000
+};
+
+const R_GAS = 8.314; // J/(mol·K)
+const M_CH4 = 16.04; // g/mol
+const M_CO2 = 44.01; // g/mol
+const M_H2O = 18.015; // g/mol
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.querySelectorAll('#topbar nav button').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('#topbar nav button');
+  const map = {project:0, upload:1, curves:2, results:3};
+  btns[map[id]].classList.add('active');
+}
+
+function showTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(t => t.style.display = 'none');
+  document.getElementById(tabId).style.display = 'block';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (tabId === 'tab-chart') setTimeout(renderTreatmentCharts, 100);
+  if (tabId === 'tab-method') renderMethods();
+}
+
+// ============================================================
+// PROJECT SAVE
+// ============================================================
+function saveProject() {
+  state.project = {
+    question: document.getElementById('sci-question').value,
+    name: document.getElementById('proj-name').value,
+    pi: document.getElementById('pi-name').value,
+    inst: document.getElementById('pi-inst').value,
+    applyCorr: document.getElementById('apply-corr').value === 'yes'
+  };
+  alert('✅ Project settings saved!\n\nNow go to the Data tab to upload your files.');
+}
+
+// ============================================================
+// FILE UPLOAD — TXT
+// ============================================================
+function handleTxtUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  showFileItem('list-txt', file, 'parsing...');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      state.txtData = parseLGRtxt(e.target.result);
+      showFileItem('list-txt', file, 'ok', `${state.txtData.length} rows parsed`);
+      showDataPreview();
+    } catch(err) {
+      showFileItem('list-txt', file, 'err', err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseLGRtxt(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  // Line 0: device info, Line 1: header, Line 2+: data
+  const headerLine = lines[1];
+  const headers = headerLine.split(',').map(h => h.trim());
+  const rows = [];
+  for (let i = 2; i < lines.length; i++) {
+    const parts = lines[i].split(',');
+    if (parts.length < headers.length) continue;
+    const row = {};
+    headers.forEach((h, j) => { row[h] = parts[j] ? parts[j].trim() : ''; });
+    // Parse datetime
+    const dt = parseDateTime(row['Time'] || row[headers[0]]);
+    if (!dt) continue;
+    row._dt = dt;
+    row._ts = dt.getTime();
+    // Parse numeric fields
+    row._ch4d = parseFloat(row['[CH4]d_ppm']) || 0;
+    row._co2d = parseFloat(row['[CO2]d_ppm']) || 0;
+    row._h2o = parseFloat(row['[H2O]_ppm']) || 0;
+    row._ch4 = parseFloat(row['[CH4]_ppm']) || 0;
+    row._co2_12 = parseFloat(row['[12CO2]_ppm']) || 0;
+    row._GasT = parseFloat(row['GasT_C']) || 0;
+    row._AmbT = parseFloat(row['AmbT_C']) || 0;
+    row._GasP = parseFloat(row['GasP_torr']) || 0;
+    // Apply correction
+    row._ch4_corr = CORR.CH4_slope * row._ch4d + CORR.CH4_intercept;
+    row._co2_corr = CORR.CO2_slope * row._co2d + CORR.CO2_intercept;
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseDateTime(s) {
+  if (!s) return null;
+  // Format: DD/MM/YYYY HH:MM:SS.mmm
+  const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5], +m[6]);
+  return null;
+}
+
+// ============================================================
+// FILE UPLOAD — XLSX (read as CSV fallback via text if CSV)
+// ============================================================
+function handleXlsxUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  showFileItem('list-xlsx', file, 'parsing...');
+
+  if (file.name.endsWith('.csv')) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: result => {
+        state.timesData = result.data;
+        buildWindowsFromTimes();
+        showFileItem('list-xlsx', file, 'ok', `${state.timesData.length} rows`);
+        showDataPreview();
+      }
+    });
+  } else {
+    // For xlsx, use SheetJS if available, else prompt user to convert to CSV
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        // Try to parse as binary xlsx using basic approach
+        // Use SheetJS from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = () => {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, {type:'array'});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+          state.timesData = json;
+          buildWindowsFromTimes();
+          showFileItem('list-xlsx', file, 'ok', `${state.timesData.length} measurement windows found`);
+          showDataPreview();
+        };
+        document.head.appendChild(script);
+      } catch(err) {
+        showFileItem('list-xlsx', file, 'err', 'Could not parse xlsx. Try exporting as CSV.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function buildWindowsFromTimes() {
+  if (!state.timesData) return;
+  state.windows = state.timesData.map((row, i) => {
+    // Support both naming conventions
+    const start = row['used_start'] || row['start'] || '';
+    const stop = row['used_stop'] || row['stop'] || '';
+    const dateStr = row['Date'] ? String(row['Date']).substring(0,10) : '';
+    return {
+      num: row['Num'] || (i+1),
+      date: dateStr,
+      start: String(start).substring(0,8),
+      stop: String(stop).substring(0,8),
+      ta: parseFloat(row['Ta'] || row['Ta_C'] || 20),
+      pressure: parseFloat(row['luchtdruk'] || row['pressure_hPa'] || 1013),
+      diam: parseFloat(row['chamber width/diameter'] || row['diam_cm'] || 15.5),
+      height: parseFloat(row['chamber height'] || row['height_cm'] || 29.5),
+      shape: (row['chamber shape'] || 'round').toLowerCase(),
+      treatment: row['plot'] || row['treatment'] || '',
+      note: row['Unnamed: 12'] || row['note'] || '',
+      tube_l: parseFloat(row['tube.l'] || 20)
+    };
+  });
+}
+
+function addManualWindow() {
+  const w = {
+    num: state.windows.length + 1,
+    date: document.getElementById('p-date').value,
+    start: document.getElementById('p-start').value,
+    stop: document.getElementById('p-stop').value,
+    ta: parseFloat(document.getElementById('p-ta').value) || 20,
+    pressure: parseFloat(document.getElementById('p-press').value) || 1013,
+    diam: parseFloat(document.getElementById('p-diam').value) || 15.5,
+    height: parseFloat(document.getElementById('p-height').value) || 29.5,
+    shape: document.getElementById('p-shape').value,
+    treatment: document.getElementById('p-treat').value || 'manual',
+    note: ''
+  };
+  state.windows.push(w);
+  showDataPreview();
+}
+
+// ============================================================
+// DATA PROCESSING
+// ============================================================
+function processData() {
+  if (!state.txtData || state.txtData.length === 0) {
+    alert('Please upload the LGR TXT file first.'); return;
+  }
+  if (state.windows.length === 0) {
+    // Try to use manual params if no Times uploaded
+    addManualWindow();
+  }
+  buildCurves();
+  showSection('curves');
+}
+
+function buildCurves() {
+  state.curves = [];
+  const applyCorr = state.project.applyCorr !== false; // default true
+
+  state.windows.forEach((win, idx) => {
+    // Get data for this window
+    const rows = getRowsForWindow(win);
+    if (rows.length < 5) {
+      state.curves.push({ win, rows:[], status:'rejected', reason:'< 5 data points', r2_ch4:null, r2_co2:null, slope_ch4:null, slope_co2:null });
+      return;
+    }
+
+    // Time in seconds from start
+    const t0 = rows[0]._ts;
+    const times_s = rows.map(r => (r._ts - t0) / 1000);
+
+    const ch4_vals = rows.map(r => applyCorr ? r._ch4_corr : r._ch4d);
+    const co2_vals = rows.map(r => applyCorr ? r._co2_corr : r._co2d);
+    const h2o_vals = rows.map(r => r._h2o);
+
+    const fit_ch4 = linearFit(times_s, ch4_vals);
+    const fit_co2 = linearFit(times_s, co2_vals);
+    const fit_h2o = linearFit(times_s, h2o_vals);
+
+    // Calculate flux
+    const flux_ch4 = calcFlux(fit_ch4.slope, win, M_CH4);
+    const flux_co2 = calcFlux(fit_co2.slope, win, M_CO2);
+
+    state.curves.push({
+      win, rows, times_s,
+      ch4_vals, co2_vals, h2o_vals,
+      fit_ch4, fit_co2, fit_h2o,
+      flux_ch4, flux_co2,
+      status: 'accepted',
+      applyCorr
+    });
+  });
+
+  renderCurves();
+  computeResults();
+}
+
+function getRowsForWindow(win) {
+  if (!state.txtData) return [];
+  // Build date prefix from win.date (YYYY-MM-DD -> DD/MM/YYYY)
+  let datePrefix = '';
+  if (win.date) {
+    const parts = win.date.substring(0,10).split('-');
+    if (parts.length === 3) datePrefix = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  const startSec = timeStrToSec(win.start);
+  const stopSec = timeStrToSec(win.stop);
+
+  return state.txtData.filter(r => {
+    if (!r._dt) return false;
+    if (datePrefix) {
+      const d = r._dt;
+      const dp = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      if (dp !== datePrefix) return false;
+    }
+    const rowSec = r._dt.getHours()*3600 + r._dt.getMinutes()*60 + r._dt.getSeconds();
+    return rowSec >= startSec && rowSec <= stopSec;
+  });
+}
+
+function timeStrToSec(str) {
+  if (!str) return 0;
+  const p = String(str).split(':');
+  return parseInt(p[0]||0)*3600 + parseInt(p[1]||0)*60 + parseInt(p[2]||0);
+}
+
+function linearFit(x, y) {
+  const n = x.length;
+  if (n < 2) return {slope:0, intercept:0, r2:0};
+  const mx = x.reduce((a,b)=>a+b,0)/n;
+  const my = y.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  x.forEach((xi,i) => { num += (xi-mx)*(y[i]-my); den += (xi-mx)**2; });
+  const slope = den !== 0 ? num/den : 0;
+  const intercept = my - slope*mx;
+  // R²
+  const ss_res = y.reduce((a,yi,i) => a + (yi - (slope*x[i]+intercept))**2, 0);
+  const ss_tot = y.reduce((a,yi) => a + (yi-my)**2, 0);
+  const r2 = ss_tot > 0 ? 1 - ss_res/ss_tot : 1;
+  return { slope, intercept, r2, n };
+}
+
+function calcFlux(slope_ppm_per_s, win, M_g_per_mol) {
+  // Chamber geometry
+  let area_m2, vol_m3;
+  const diam = win.diam || 15.5;
+  const height = win.height || 29.5;
+  if ((win.shape||'round').includes('round') || (win.shape||'').includes('cyl')) {
+    const r_m = diam/2/100;
+    area_m2 = Math.PI * r_m * r_m;
+  } else {
+    // rect: diam = width, need length — use diam²
+    const s = diam/100;
+    area_m2 = s * s;
+  }
+  vol_m3 = area_m2 * (height/100);
+
+  const P_Pa = (win.pressure || 1013) * 100;
+  const T_K = (win.ta || 20) + 273.15;
+
+  // F [mg/m²/h] = slope [ppm/s] × (V/A) [m] × (P/RT) [mol/m³] × M [g/mol] × 1e-6 [ppm→mol/mol] × 3600 [s→h] × 1000 [g→mg]
+  const flux = slope_ppm_per_s * (vol_m3/area_m2) * (P_Pa/(R_GAS*T_K)) * M_g_per_mol * 1e-6 * 3600 * 1000;
+  return { value: flux, area_m2, vol_m3, P_Pa, T_K };
+}
+
+// ============================================================
+// CURVE RENDERING
+// ============================================================
+function renderCurves() {
+  const grid = document.getElementById('curve-grid');
+  const info = document.getElementById('curves-info');
+  grid.innerHTML = '';
+
+  if (state.curves.length === 0) { info.style.display=''; return; }
+  info.style.display = 'none';
+  document.getElementById('curve-controls').style.display = 'flex';
+
+  // Destroy old charts
+  Object.values(state.curveCharts).forEach(c => { try{c.destroy()}catch(e){} });
+  state.curveCharts = {};
+
+  state.curves.forEach((c, idx) => {
+    const div = document.createElement('div');
+    div.className = `curve-card ${c.status}`;
+    div.id = `curve-card-${idx}`;
+
+    const treatTag = c.win.treatment ? `<span class="tag">${c.win.treatment}</span>` : '';
+    const noteTag = c.win.note ? `<span class="tag tag-orange">${c.win.note}</span>` : '';
+    const r2_ch4 = c.fit_ch4 ? c.fit_ch4.r2.toFixed(3) : 'N/A';
+    const r2_co2 = c.fit_co2 ? c.fit_co2.r2.toFixed(3) : 'N/A';
+    const flux_ch4 = c.flux_ch4 ? c.flux_ch4.value.toFixed(3) : 'N/A';
+    const flux_co2 = c.flux_co2 ? c.flux_co2.value.toFixed(3) : 'N/A';
+
+    div.innerHTML = `
+      <div class="curve-header">
+        <span class="curve-num">Measurement #${c.win.num}</span>
+        <span class="curve-meta">${c.win.start} – ${c.win.stop} ${treatTag} ${noteTag}</span>
+      </div>
+      ${c.rows.length < 5 ? `<div class="alert alert-err">${c.reason || 'Insufficient data'}</div>` : `
+        <div class="curve-canvas-wrap">
+          <canvas id="canvas-${idx}"></canvas>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-mid);margin-top:6px;">
+          CH₄ slope: <span class="mono">${c.fit_ch4 ? (c.fit_ch4.slope*60).toFixed(6):'-'} ppm/min</span> &nbsp;|&nbsp;
+          CO₂ slope: <span class="mono">${c.fit_co2 ? (c.fit_co2.slope*60).toFixed(4):'-'} ppm/min</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-mid);margin-top:2px;">
+          CH₄ flux: <span class="mono">${flux_ch4} mg/m²/h</span> &nbsp;|&nbsp;
+          CO₂ flux: <span class="mono">${flux_co2} mg/m²/h</span>
+        </div>
+      `}
+      <div class="curve-actions">
+        <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}" onclick="setCurveStatus(${idx},'accepted')">✅ Accept</button>
+        <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}" onclick="setCurveStatus(${idx},'rejected')">❌ Reject</button>
+        <span class="r2">R² CH₄: ${r2_ch4} | CO₂: ${r2_co2}</span>
+      </div>`;
+    grid.appendChild(div);
+
+    if (c.rows.length >= 5) {
+      setTimeout(() => drawCurveChart(idx, c), 50);
+    }
+  });
+}
+
+function drawCurveChart(idx, c) {
+  const canvas = document.getElementById(`canvas-${idx}`);
+  if (!canvas) return;
+  if (state.curveCharts[idx]) { state.curveCharts[idx].destroy(); }
+
+  const labels = c.times_s.map(t => t.toFixed(0)+'s');
+  const gas = state.currentGas;
+  let vals, fitSlope, fitInt, label, color;
+
+  if (gas === 'ch4') {
+    vals = c.ch4_vals; fitSlope = c.fit_ch4.slope; fitInt = c.fit_ch4.intercept;
+    label = 'CH₄ corrected (ppm)'; color = '#2d6a4f';
+  } else if (gas === 'co2') {
+    vals = c.co2_vals; fitSlope = c.fit_co2.slope; fitInt = c.fit_co2.intercept;
+    label = 'CO₂ corrected (ppm)'; color = '#f4a261';
+  } else {
+    vals = c.h2o_vals.map(v => v/1000); fitSlope = c.fit_h2o.slope/1000; fitInt = c.fit_h2o.intercept/1000;
+    label = 'H₂O (× 10³ ppm)'; color = '#3498db';
+  }
+
+  const fitLine = c.times_s.map(t => fitSlope*t + fitInt);
+
+  state.curveCharts[idx] = new Chart(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label, data: c.times_s.map((t,i)=>({x:t,y:vals[i]})), backgroundColor: color+'80', pointRadius: 2 },
+        { label: 'Linear fit', data: c.times_s.map((t,i)=>({x:t,y:fitLine[i]})), type:'line', borderColor: color, pointRadius:0, borderWidth:2, tension:0 }
+      ]
+    },
+    options: {
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: 'Time (s)', font:{size:10} }, ticks:{font:{size:9}} },
+        y: { title: { display: true, text: label, font:{size:10} }, ticks:{font:{size:9}} }
+      }
+    }
+  });
+}
+
+function showGas(gas) {
+  state.currentGas = gas;
+  Object.values(state.curveCharts).forEach(c => { try{c.destroy()}catch(e){} });
+  state.curveCharts = {};
+  state.curves.forEach((c, idx) => {
+    if (c.rows.length >= 5) drawCurveChart(idx, c);
+  });
+}
+
+function setCurveStatus(idx, status) {
+  state.curves[idx].status = status;
+  const card = document.getElementById(`curve-card-${idx}`);
+  card.className = `curve-card ${status}`;
+  computeResults();
+}
+
+function acceptAll() { state.curves.forEach((_,i) => setCurveStatus(i,'accepted')); }
+function rejectAll() { state.curves.forEach((_,i) => setCurveStatus(i,'rejected')); }
+
+// ============================================================
+// FLUX RESULTS
+// ============================================================
+function computeResults() {
+  state.results = state.curves
+    .filter(c => c.status === 'accepted' && c.rows.length >= 5)
+    .map(c => ({
+      num: c.win.num,
+      date: c.win.date,
+      start: c.win.start,
+      stop: c.win.stop,
+      treatment: c.win.treatment || 'N/A',
+      flux_ch4: c.flux_ch4 ? c.flux_ch4.value : null,
+      flux_co2: c.flux_co2 ? c.flux_co2.value : null,
+      r2_ch4: c.fit_ch4 ? c.fit_ch4.r2 : null,
+      r2_co2: c.fit_co2 ? c.fit_co2.r2 : null,
+      n_pts: c.rows.length,
+      slope_ch4_ppm_s: c.fit_ch4 ? c.fit_ch4.slope : null,
+      slope_co2_ppm_s: c.fit_co2 ? c.fit_co2.slope : null,
+      note: c.win.note || ''
+    }));
+
+  updateResultsUI();
+}
+
+function updateResultsUI() {
+  const info = document.getElementById('results-info');
+  const content = document.getElementById('results-content');
+
+  if (state.results.length === 0) {
+    info.style.display = '';
+    content.style.display = 'none';
+    return;
+  }
+  info.style.display = 'none';
+  content.style.display = 'block';
+
+  renderStatCards();
+  renderResultsTable();
+  renderFluxCompChart();
+}
+
+function renderStatCards() {
+  const accepted = state.results;
+  const n = accepted.length;
+  const ch4_vals = accepted.map(r=>r.flux_ch4).filter(v=>v!==null);
+  const co2_vals = accepted.map(r=>r.flux_co2).filter(v=>v!==null);
+  const mean_ch4 = ch4_vals.length ? ch4_vals.reduce((a,b)=>a+b,0)/ch4_vals.length : 0;
+  const mean_co2 = co2_vals.length ? co2_vals.reduce((a,b)=>a+b,0)/co2_vals.length : 0;
+  const mean_r2_ch4 = accepted.map(r=>r.r2_ch4).filter(v=>v!==null).reduce((a,b)=>a+b,0)/(accepted.length||1);
+
+  const container = document.getElementById('stat-cards');
+  container.innerHTML = `
+    <div class="stat-card">
+      <span class="stat-val">${n}</span>
+      <div class="stat-unit">accepted incubations</div>
+      <div class="stat-label">Measurements</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">${mean_ch4.toFixed(2)}</span>
+      <div class="stat-unit">mg CH₄ m⁻² h⁻¹ (mean)</div>
+      <div class="stat-label">CH₄ Flux</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">${mean_co2.toFixed(1)}</span>
+      <div class="stat-unit">mg CO₂ m⁻² h⁻¹ (mean)</div>
+      <div class="stat-label">CO₂ Flux</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">${mean_r2_ch4.toFixed(3)}</span>
+      <div class="stat-unit">mean CH₄ R²</div>
+      <div class="stat-label">Fit Quality</div>
+    </div>`;
+}
+
+function renderResultsTable() {
+  const tbody = document.getElementById('results-tbody');
+  tbody.innerHTML = '';
+  state.results.forEach(r => {
+    const tr = document.createElement('tr');
+    const ch4_class = r.flux_ch4 > 0 ? 'pos' : 'neg';
+    const co2_class = r.flux_co2 > 0 ? 'pos' : 'neg';
+    tr.innerHTML = `
+      <td>${r.num}</td>
+      <td>${r.date}</td>
+      <td class="mono">${r.start}</td>
+      <td class="mono">${r.stop}</td>
+      <td><span class="tag">${r.treatment}</span></td>
+      <td class="${ch4_class} mono">${r.flux_ch4 !== null ? r.flux_ch4.toFixed(4) : '-'}</td>
+      <td class="${co2_class} mono">${r.flux_co2 !== null ? r.flux_co2.toFixed(3) : '-'}</td>
+      <td class="mono">${r.r2_ch4 !== null ? r.r2_ch4.toFixed(3) : '-'}</td>
+      <td class="mono">${r.r2_co2 !== null ? r.r2_co2.toFixed(3) : '-'}</td>
+      <td><span class="status-ok">✅ accepted</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderFluxCompChart() {
+  const canvas = document.getElementById('chart-flux-comparison');
+  if (state.mainCharts['comp']) state.mainCharts['comp'].destroy();
+
+  const treatments = [...new Set(state.results.map(r=>r.treatment))];
+  const ch4_by_treat = treatments.map(t => {
+    const vs = state.results.filter(r=>r.treatment===t).map(r=>r.flux_ch4).filter(v=>v!==null);
+    return vs.length ? vs.reduce((a,b)=>a+b)/vs.length : 0;
+  });
+  const co2_by_treat = treatments.map(t => {
+    const vs = state.results.filter(r=>r.treatment===t).map(r=>r.flux_co2).filter(v=>v!==null);
+    return vs.length ? vs.reduce((a,b)=>a+b)/vs.length : 0;
+  });
+
+  state.mainCharts['comp'] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: treatments,
+      datasets: [
+        { label: 'CH₄ flux (mg/m²/h)', data: ch4_by_treat, backgroundColor: '#2d6a4f99', borderColor: '#2d6a4f', borderWidth: 2, yAxisID: 'y1' },
+        { label: 'CO₂ flux (mg/m²/h)', data: co2_by_treat, backgroundColor: '#f4a26199', borderColor: '#f4a261', borderWidth: 2, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'top' }, title: { display: true, text: 'Mean Flux by Treatment' } },
+      scales: {
+        y1: { type: 'linear', position: 'left', title: { display: true, text: 'CH₄ flux (mg/m²/h)' } },
+        y2: { type: 'linear', position: 'right', title: { display: true, text: 'CO₂ flux (mg/m²/h)' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+function renderTreatmentCharts() {
+  // CH4 per treatment
+  const c1 = document.getElementById('chart-ch4-treat');
+  const c2 = document.getElementById('chart-co2-treat');
+  if (state.mainCharts['t_ch4']) state.mainCharts['t_ch4'].destroy();
+  if (state.mainCharts['t_co2']) state.mainCharts['t_co2'].destroy();
+
+  const labels = state.results.map(r=>`#${r.num} ${r.treatment}`);
+  const ch4s = state.results.map(r=>r.flux_ch4);
+  const co2s = state.results.map(r=>r.flux_co2);
+  const colors = state.results.map(r => treatColor(r.treatment));
+
+  state.mainCharts['t_ch4'] = new Chart(c1, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'CH₄ flux (mg/m²/h)', data: ch4s, backgroundColor: colors.map(c=>c+'bb'), borderColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      plugins: { legend: { display: false }, title: { display: true, text: 'CH₄ Flux per Measurement — corrected values' } },
+      scales: { y: { title: { display: true, text: 'CH₄ flux (mg CH₄ m⁻² h⁻¹)' } } }
+    }
+  });
+
+  state.mainCharts['t_co2'] = new Chart(c2, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'CO₂ flux (mg/m²/h)', data: co2s, backgroundColor: colors.map(c=>c+'bb'), borderColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      plugins: { legend: { display: false }, title: { display: true, text: 'CO₂ Flux per Measurement — corrected values' } },
+      scales: { y: { title: { display: true, text: 'CO₂ flux (mg CO₂ m⁻² h⁻¹)' } } }
+    }
+  });
+}
+
+function treatColor(t) {
+  const palette = ['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2c3e50'];
+  const treats = [...new Set(state.results.map(r=>r.treatment))];
+  return palette[treats.indexOf(t) % palette.length];
+}
+
+// ============================================================
+// METHODS TEXT
+// ============================================================
+function renderMethods() {
+  const n = state.results.length;
+  const applyCorr = state.project.applyCorr !== false;
+  const pi = state.project.pi || 'the investigator';
+  const proj = state.project.name || 'this study';
+  document.getElementById('methods-text').innerHTML = `
+    <p>Greenhouse gas (GHG) fluxes of CH₄ and CO₂ were measured using a LOS GATOS Research (LGR) laser-based, microportable GHG analyzer. Static closed chambers (cylindrical, diameter = ${document.getElementById('p-diam').value} cm, height = ${document.getElementById('p-height').value} cm; area = ${(Math.PI*(parseFloat(document.getElementById('p-diam').value)/2/100)**2).toFixed(5)} m², volume = ${((Math.PI*(parseFloat(document.getElementById('p-diam').value)/2)**2*parseFloat(document.getElementById('p-height').value))/1e6).toFixed(6)} m³) were deployed on ${n > 0 ? state.results[0].date : 'the measurement date'} for incubation periods of approximately ${n > 0 ? Math.round((timeStrToSec(state.results[0].stop)-timeStrToSec(state.results[0].start))/60) : '1–3'} minutes per plot.</p>
+    <br>
+    ${applyCorr ? `<p><strong>Instrument calibration correction:</strong> Prior to flux calculation, a systematic calibration deviation was identified in the LGR analyzer ("Tiger" unit). A linear correction was applied to all dry-mole-fraction measurements: CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000; CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000 (R² = 1.000 for both, verified against laboratory reference values provided by R.C.H. Aben, Radboud University Nijmegen). The CO₂ correction involves a substantial slope bias (~13%), while the CH₄ bias is smaller (~2.6%). Uncorrected values were not used.</p><br>` : ''}
+    <p><strong>Flux calculation:</strong> Greenhouse gas fluxes (F) were calculated from the linear rate of concentration change within the closed chamber (dC/dt, ppm s⁻¹) according to: F = (dC/dt) × (V/A) × (P/RT) × M × 10⁻⁶ × 3600 × 10³ [mg m⁻² h⁻¹], where V is chamber volume (m³), A is chamber base area (m²), P is atmospheric pressure (Pa), R is the ideal gas constant (8.314 J mol⁻¹ K⁻¹), T is air temperature (K), M is the molar mass of the gas (CH₄: 16.04 g mol⁻¹; CO₂: 44.01 g mol⁻¹). Linear regression was performed on the concentration time series for each incubation window, and the slope was used as dC/dt. Incubation windows with anomalous concentration patterns (e.g., ebullition events, disturbances) were excluded after visual inspection of individual time series.</p>
+    <br>
+    <p>A total of ${n} incubation windows were accepted for analysis. Data analysis was performed using the Carbon-Flux platform (Ernandes Sobreira Oliveira Junior / UNEMAT, 2025).</p>`;
+}
+
+// ============================================================
+// EXPORT CSV
+// ============================================================
+function exportCSV() {
+  const headers = ['Num','Date','Start','Stop','Treatment','CH4_flux_mg_m2_h','CO2_flux_mg_m2_h','R2_CH4','R2_CO2','N_points','Note'];
+  const rows = state.results.map(r => [
+    r.num, r.date, r.start, r.stop, r.treatment,
+    r.flux_ch4 !== null ? r.flux_ch4.toFixed(6) : '',
+    r.flux_co2 !== null ? r.flux_co2.toFixed(6) : '',
+    r.r2_ch4 !== null ? r.r2_ch4.toFixed(6) : '',
+    r.r2_co2 !== null ? r.r2_co2.toFixed(6) : '',
+    r.n_pts, r.note
+  ]);
+  const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'carbon_flux_results.csv';
+  a.click();
+}
+
+// ============================================================
+// DATA PREVIEW
+// ============================================================
+function showDataPreview() {
+  const div = document.getElementById('data-preview');
+  const content = document.getElementById('preview-content');
+  if (!state.txtData && state.windows.length === 0) { div.style.display='none'; return; }
+  div.style.display = 'block';
+
+  let html = '';
+  if (state.txtData) {
+    const row0 = state.txtData[0];
+    html += `<div class="alert alert-info">✅ TXT parsed: <strong>${state.txtData.length} rows</strong> — from ${state.txtData[0]._dt?.toLocaleString()} to ${state.txtData[state.txtData.length-1]._dt?.toLocaleString()}</div>`;
+    html += `<p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:12px;">Sample corrected values (row 1): CH₄ raw = ${row0._ch4d.toFixed(4)} ppm → <strong>corrected = ${row0._ch4_corr.toFixed(4)} ppm</strong> | CO₂ raw = ${row0._co2d.toFixed(2)} ppm → <strong>corrected = ${row0._co2_corr.toFixed(2)} ppm</strong></p>`;
+  }
+  if (state.windows.length > 0) {
+    html += `<div class="alert alert-info">✅ ${state.windows.length} measurement window(s) loaded</div>`;
+    html += `<div class="times-editor"><table><thead><tr><th>#</th><th>Date</th><th>Start</th><th>Stop</th><th>Treatment</th><th>Ta (°C)</th><th>P (hPa)</th><th>Note</th></tr></thead><tbody>`;
+    state.windows.forEach((w, i) => {
+      html += `<tr>
+        <td>${w.num}</td>
+        <td class="mono">${w.date}</td>
+        <td class="mono">${w.start}</td>
+        <td class="mono">${w.stop}</td>
+        <td><span class="badge-treat">${w.treatment||'—'}</span></td>
+        <td>${w.ta}</td>
+        <td>${w.pressure}</td>
+        <td><em style="font-size:0.8rem;color:var(--text-mid)">${w.note||''}</em></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    html += `<div class="mt-16"><button class="btn btn-primary" onclick="processData()">⚙️ Process & build curves →</button></div>`;
+  }
+  content.innerHTML = html;
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showFileItem(listId, file, status, detail='') {
+  const list = document.getElementById(listId);
+  list.innerHTML = `
+    <div class="file-item">
+      <span class="ficon">📄</span>
+      <span class="fname">${file.name}</span>
+      <span class="fsize">${(file.size/1024).toFixed(1)} KB</span>
+      <span class="fstatus ${status==='ok'?'status-ok':'status-err'}">
+        ${status === 'ok' ? '✅ '+detail : status === 'err' ? '❌ '+detail : '⏳ '+status}
+      </span>
+    </div>`;
+}
+
+// Drag and drop
+['zone-txt','zone-xlsx'].forEach(id => {
+  const zone = document.getElementById(id);
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (id === 'zone-txt') { document.getElementById('input-txt').files = e.dataTransfer.files; handleTxtUpload({target:{files:e.dataTransfer.files}}); }
+    else { document.getElementById('input-xlsx').files = e.dataTransfer.files; handleXlsxUpload({target:{files:e.dataTransfer.files}}); }
+  });
+});
+</script>
+</body>
+</html>
