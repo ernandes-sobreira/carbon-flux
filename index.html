@@ -738,57 +738,106 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
 <!-- ============ SECTION: RESULTS ============ -->
 <div class="section" id="section-results">
-  <div class="section-title">Flux Results & Comparisons</div>
-  <div class="section-sub">Calculated fluxes from accepted incubation windows, with correction applied. Compare treatments and export data.</div>
+  <div class="section-title">Resultados de Fluxo</div>
+  <div class="section-sub">Fluxos calculados das janelas aceitas. Unidade final: <strong>mg m⁻² dia⁻¹</strong> (igual ao script R do Radboud). Inclui desvio padrão por tratamento, jitterplot e exportação.</div>
 
   <div class="alert alert-info" id="results-info">
-    📈 Accept curves in the <strong>Curves</strong> tab to generate flux results here.
+    📈 Aceite as curvas na aba <strong>Curves</strong> para gerar os resultados aqui.
   </div>
 
   <div id="results-content" style="display:none;">
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('tab-summary')">Summary</button>
-      <button class="tab-btn" onclick="showTab('tab-table')">Data table</button>
-      <button class="tab-btn" onclick="showTab('tab-chart')">Charts</button>
-      <button class="tab-btn" onclick="showTab('tab-method')">Methods</button>
+      <button class="tab-btn active" onclick="showTab('tab-summary','this')">📊 Resumo</button>
+      <button class="tab-btn" onclick="showTab('tab-jitter','this')">🔵 Jitterplot</button>
+      <button class="tab-btn" onclick="showTab('tab-table','this')">📋 Tabela</button>
+      <button class="tab-btn" onclick="showTab('tab-method','this')">📝 Métodos</button>
     </div>
 
+    <!-- TAB SUMMARY -->
     <div id="tab-summary" class="tab-pane">
       <div class="results-grid" id="stat-cards"></div>
-      <div class="chart-full">
-        <canvas id="chart-flux-comparison" height="120"></canvas>
+
+      <!-- Summary por tratamento -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">Resumo por tratamento — média ± DP (mg m⁻² dia⁻¹)</div>
+        <div style="overflow-x:auto;margin-top:12px;">
+          <table class="results-table" id="summary-by-treat-table">
+            <thead>
+              <tr>
+                <th>Tratamento</th>
+                <th>n</th>
+                <th>CH₄ média</th><th>CH₄ DP</th><th>CH₄ mín</th><th>CH₄ máx</th>
+                <th>CO₂ média</th><th>CO₂ DP</th><th>CO₂ mín</th><th>CO₂ máx</th>
+              </tr>
+            </thead>
+            <tbody id="summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bar chart com SD -->
+      <div class="chart-full" style="position:relative;">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;">
+          <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-barsd-ch4','CH4_flux_bar')">⬇ CH₄</button>
+          <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-barsd-co2','CO2_flux_bar')">⬇ CO₂</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div><canvas id="chart-barsd-ch4" height="220"></canvas></div>
+          <div><canvas id="chart-barsd-co2" height="220"></canvas></div>
+        </div>
       </div>
     </div>
+
+    <!-- TAB JITTER -->
+    <div id="tab-jitter" class="tab-pane" style="display:none;">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Jitterplot por tratamento</div>
+        <div class="card-sub">Cada ponto = uma medição aceita. Linha horizontal = mediana por tratamento. Pontos distantes (outliers) indicam medições que merecem revisão.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-sm btn-primary" id="jitter-ch4-btn" onclick="setJitterGas('ch4')">CH₄</button>
+          <button class="btn btn-sm btn-ghost"   id="jitter-co2-btn" onclick="setJitterGas('co2')">CO₂</button>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-jitter','jitterplot')">⬇ Baixar gráfico</button>
+          </div>
+        </div>
+        <div style="position:relative;height:400px;"><canvas id="chart-jitter"></canvas></div>
+        <div id="jitter-outlier-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-mid);"></div>
+      </div>
+    </div>
+
+    <!-- TAB TABLE -->
     <div id="tab-table" class="tab-pane" style="display:none;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+        <span style="font-weight:700;font-size:0.9rem;color:var(--green-dark);">Unidades: mg m⁻² dia⁻¹ &nbsp;|&nbsp; Fluxo = slope × (V/A) × (P/RT) × M × 86400</span>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-accent" onclick="exportExcel()">⬇ Excel (.xlsx)</button>
+          <button class="btn btn-ghost"  onclick="exportCSV()">⬇ CSV</button>
+        </div>
+      </div>
       <div style="overflow-x:auto;">
         <table class="results-table" id="results-table">
           <thead>
             <tr>
-              <th>#</th><th>Date</th><th>Start</th><th>Stop</th><th>Treatment</th>
-              <th>CH₄ flux (mg/m²/h)</th><th>CO₂ flux (mg/m²/h)</th>
-              <th>CH₄ R²</th><th>CO₂ R²</th><th>Status</th>
+              <th>#</th><th>Data</th><th>Início</th><th>Fim</th><th>Tratamento</th>
+              <th>CH₄ flux<br>(mg m⁻²dia⁻¹)</th>
+              <th>CO₂ flux<br>(mg m⁻²dia⁻¹)</th>
+              <th>CH₄ flux<br>(mg m⁻²h⁻¹)</th>
+              <th>CO₂ flux<br>(mg m⁻²h⁻¹)</th>
+              <th>CH₄ R²</th><th>CO₂ R²</th>
+              <th>CH₄ slope<br>(ppm/s)</th><th>CO₂ slope<br>(ppm/s)</th>
+              <th>n pts</th><th>Nota</th>
             </tr>
           </thead>
           <tbody id="results-tbody"></tbody>
         </table>
       </div>
-      <div class="mt-16">
-        <button class="btn btn-accent" onclick="exportCSV()">⬇️ Export CSV</button>
-      </div>
     </div>
-    <div id="tab-chart" class="tab-pane" style="display:none;">
-      <div class="chart-full">
-        <canvas id="chart-ch4-treat" height="130"></canvas>
-      </div>
-      <div class="chart-full">
-        <canvas id="chart-co2-treat" height="130"></canvas>
-      </div>
-    </div>
+
+    <!-- TAB METHODS -->
     <div id="tab-method" class="tab-pane" style="display:none;">
       <div class="card">
-        <div class="card-title">Methods Description (for manuscript)</div>
-        <div id="methods-text" style="line-height:1.8;font-size:0.96rem;color:var(--text-dark);">
-        </div>
+        <div class="card-title">Texto de métodos (para manuscrito)</div>
+        <div id="methods-text" style="line-height:1.9;font-size:0.95rem;color:var(--text-dark);"></div>
       </div>
     </div>
   </div>
@@ -1529,214 +1578,217 @@ function rejectAll() { state.curves.forEach((_,i) => setCurveStatus(i,'rejected'
 // ============================================================
 // FLUX RESULTS
 // ============================================================
-function computeResults() {
-  state.results = state.curves
-    .filter(c => c.status === 'accepted' && c.rows.length >= 5)
-    .map(c => ({
-      num: c.win.num,
-      date: c.win.date,
-      start: c.win.start,
-      stop: c.win.stop,
-      treatment: c.win.treatment || 'N/A',
-      flux_ch4: c.flux_ch4 ? c.flux_ch4.value : null,
-      flux_co2: c.flux_co2 ? c.flux_co2.value : null,
-      r2_ch4: c.fit_ch4 ? c.fit_ch4.r2 : null,
-      r2_co2: c.fit_co2 ? c.fit_co2.r2 : null,
-      n_pts: c.rows.length,
-      slope_ch4_ppm_s: c.fit_ch4 ? c.fit_ch4.slope : null,
-      slope_co2_ppm_s: c.fit_co2 ? c.fit_co2.slope : null,
-      note: c.win.note || ''
-    }));
+function calcFluxDay(slope_ppm_s, win, M_g_per_mol, mean_h2o_ppm) {
+  const diam = win.diam || 15.5, height = win.height || 29.5;
+  let area_m2;
+  if ((win.shape||'round').includes('round')) { const r=diam/2/100; area_m2=Math.PI*r*r; }
+  else { const s=diam/100; area_m2=s*s; }
+  const tube_id=0.4, tube_l=win.tube_l||20;
+  const tube_vol_m3 = Math.PI*(tube_id/2/100)**2*(tube_l/100);
+  const vol_m3 = area_m2*(height/100) + tube_vol_m3 + 14.5e-6;
+  const P_Pa=(win.pressure||1013)*100, T_K=(win.ta||20)+273.15;
+  const h2o=mean_h2o_ppm||0;
+  const umol_m2_s = slope_ppm_s*(vol_m3/area_m2)*(P_Pa/(R_GAS*T_K))*(1-h2o/1e6);
+  return {
+    mg_m2_day: umol_m2_s*86400*1e-3*M_g_per_mol,
+    mg_m2_h:   umol_m2_s*3600 *1e-3*M_g_per_mol,
+    umol_m2_s, area_m2, vol_m3
+  };
+}
+function stdDev(arr){if(arr.length<2)return 0;const m=arr.reduce((a,b)=>a+b)/arr.length;return Math.sqrt(arr.reduce((a,v)=>a+(v-m)**2,0)/(arr.length-1));}
+function median(arr){if(!arr.length)return 0;const s=[...arr].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 
+function computeResults() {
+  state.results = state.curves.filter(c=>c.status==='accepted'&&c.rows.length>=5).map(c=>{
+    const mean_h2o=c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
+    const fch4=calcFluxDay(c.fit_ch4.slope,c.win,M_CH4,mean_h2o);
+    const fco2=calcFluxDay(c.fit_co2.slope,c.win,M_CO2,mean_h2o);
+    return {num:c.win.num,date:c.win.date,start:c.win.start,stop:c.win.stop,
+      treatment:c.win.treatment||'N/A',
+      flux_ch4_day:fch4.mg_m2_day,flux_co2_day:fco2.mg_m2_day,
+      flux_ch4_h:fch4.mg_m2_h,flux_co2_h:fco2.mg_m2_h,
+      r2_ch4:c.fit_ch4.r2,r2_co2:c.fit_co2.r2,
+      slope_ch4:c.fit_ch4.slope,slope_co2:c.fit_co2.slope,
+      mean_h2o,n_pts:c.rows.length,note:c.win.note||''};
+  });
   updateResultsUI();
 }
 
-function updateResultsUI() {
-  const info = document.getElementById('results-info');
-  const content = document.getElementById('results-content');
+state.jitterGas='ch4';
 
-  if (state.results.length === 0) {
-    info.style.display = '';
-    content.style.display = 'none';
-    return;
-  }
-  info.style.display = 'none';
-  content.style.display = 'block';
-
-  renderStatCards();
-  renderResultsTable();
-  renderFluxCompChart();
+function updateResultsUI(){
+  const info=document.getElementById('results-info'),content=document.getElementById('results-content');
+  if(!state.results.length){info.style.display='';content.style.display='none';return;}
+  info.style.display='none';content.style.display='block';
+  renderStatCards();renderSummaryByTreatment();renderBarSDCharts();renderResultsTable();renderJitter('ch4');
 }
 
-function renderStatCards() {
-  const accepted = state.results;
-  const n = accepted.length;
-  const ch4_vals = accepted.map(r=>r.flux_ch4).filter(v=>v!==null);
-  const co2_vals = accepted.map(r=>r.flux_co2).filter(v=>v!==null);
-  const mean_ch4 = ch4_vals.length ? ch4_vals.reduce((a,b)=>a+b,0)/ch4_vals.length : 0;
-  const mean_co2 = co2_vals.length ? co2_vals.reduce((a,b)=>a+b,0)/co2_vals.length : 0;
-  const mean_r2_ch4 = accepted.map(r=>r.r2_ch4).filter(v=>v!==null).reduce((a,b)=>a+b,0)/(accepted.length||1);
-
-  const container = document.getElementById('stat-cards');
-  container.innerHTML = `
-    <div class="stat-card">
-      <span class="stat-val">${n}</span>
-      <div class="stat-unit">accepted incubations</div>
-      <div class="stat-label">Measurements</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-val">${mean_ch4.toFixed(2)}</span>
-      <div class="stat-unit">mg CH₄ m⁻² h⁻¹ (mean)</div>
-      <div class="stat-label">CH₄ Flux</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-val">${mean_co2.toFixed(1)}</span>
-      <div class="stat-unit">mg CO₂ m⁻² h⁻¹ (mean)</div>
-      <div class="stat-label">CO₂ Flux</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-val">${mean_r2_ch4.toFixed(3)}</span>
-      <div class="stat-unit">mean CH₄ R²</div>
-      <div class="stat-label">Fit Quality</div>
-    </div>`;
+function showTab(tabId){
+  document.querySelectorAll('.tab-pane').forEach(t=>t.style.display='none');
+  document.getElementById(tabId).style.display='block';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(event&&event.target)event.target.classList.add('active');
+  if(tabId==='tab-jitter')renderJitter(state.jitterGas);
+  if(tabId==='tab-method')renderMethods();
 }
 
-function renderResultsTable() {
-  const tbody = document.getElementById('results-tbody');
-  tbody.innerHTML = '';
-  state.results.forEach(r => {
-    const tr = document.createElement('tr');
-    const ch4_class = r.flux_ch4 > 0 ? 'pos' : 'neg';
-    const co2_class = r.flux_co2 > 0 ? 'pos' : 'neg';
-    tr.innerHTML = `
-      <td>${r.num}</td>
-      <td>${r.date}</td>
-      <td class="mono">${r.start}</td>
-      <td class="mono">${r.stop}</td>
-      <td><span class="tag">${r.treatment}</span></td>
-      <td class="${ch4_class} mono">${r.flux_ch4 !== null ? r.flux_ch4.toFixed(4) : '-'}</td>
-      <td class="${co2_class} mono">${r.flux_co2 !== null ? r.flux_co2.toFixed(3) : '-'}</td>
-      <td class="mono">${r.r2_ch4 !== null ? r.r2_ch4.toFixed(3) : '-'}</td>
-      <td class="mono">${r.r2_co2 !== null ? r.r2_co2.toFixed(3) : '-'}</td>
-      <td><span class="status-ok">✅ accepted</span></td>`;
+function renderStatCards(){
+  const R=state.results,treatments=[...new Set(R.map(r=>r.treatment))];
+  const ch4s=R.map(r=>r.flux_ch4_day).filter(v=>isFinite(v));
+  const co2s=R.map(r=>r.flux_co2_day).filter(v=>isFinite(v));
+  const mean=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+  document.getElementById('stat-cards').innerHTML=`
+    <div class="stat-card"><span class="stat-val">${R.length}</span><div class="stat-unit">medições aceitas</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><span class="stat-val">${treatments.length}</span><div class="stat-unit">tratamentos</div><div class="stat-label">Grupos</div></div>
+    <div class="stat-card"><span class="stat-val">${ch4s.length?mean(ch4s).toFixed(2):'-'}</span><div class="stat-unit">± ${ch4s.length>1?stdDev(ch4s).toFixed(2):'-'} mg CH₄ m⁻²dia⁻¹</div><div class="stat-label">CH₄ média ± DP</div></div>
+    <div class="stat-card"><span class="stat-val">${co2s.length?mean(co2s).toFixed(1):'-'}</span><div class="stat-unit">± ${co2s.length>1?stdDev(co2s).toFixed(1):'-'} mg CO₂ m⁻²dia⁻¹</div><div class="stat-label">CO₂ média ± DP</div></div>`;
+}
+
+function renderSummaryByTreatment(){
+  const treatments=[...new Set(state.results.map(r=>r.treatment))];
+  const tbody=document.getElementById('summary-tbody'); tbody.innerHTML='';
+  treatments.forEach(t=>{
+    const rows=state.results.filter(r=>r.treatment===t);
+    const ch4s=rows.map(r=>r.flux_ch4_day).filter(v=>isFinite(v));
+    const co2s=rows.map(r=>r.flux_co2_day).filter(v=>isFinite(v));
+    const m=arr=>arr.length?arr.reduce((a,b)=>a+b)/arr.length:NaN;
+    const fmt=(v,d=2)=>isNaN(v)?'-':v.toFixed(d);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="tag">${t}</span></td><td>${rows.length}</td>
+      <td class="mono"><strong>${fmt(m(ch4s))}</strong></td><td class="mono">${fmt(ch4s.length>1?stdDev(ch4s):NaN)}</td>
+      <td class="mono">${fmt(ch4s.length?Math.min(...ch4s):NaN)}</td><td class="mono">${fmt(ch4s.length?Math.max(...ch4s):NaN)}</td>
+      <td class="mono"><strong>${fmt(m(co2s),1)}</strong></td><td class="mono">${fmt(co2s.length>1?stdDev(co2s):NaN,1)}</td>
+      <td class="mono">${fmt(co2s.length?Math.min(...co2s):NaN,1)}</td><td class="mono">${fmt(co2s.length?Math.max(...co2s):NaN,1)}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-function renderFluxCompChart() {
-  const canvas = document.getElementById('chart-flux-comparison');
-  if (state.mainCharts['comp']) state.mainCharts['comp'].destroy();
-
-  const treatments = [...new Set(state.results.map(r=>r.treatment))];
-  const ch4_by_treat = treatments.map(t => {
-    const vs = state.results.filter(r=>r.treatment===t).map(r=>r.flux_ch4).filter(v=>v!==null);
-    return vs.length ? vs.reduce((a,b)=>a+b)/vs.length : 0;
-  });
-  const co2_by_treat = treatments.map(t => {
-    const vs = state.results.filter(r=>r.treatment===t).map(r=>r.flux_co2).filter(v=>v!==null);
-    return vs.length ? vs.reduce((a,b)=>a+b)/vs.length : 0;
-  });
-
-  state.mainCharts['comp'] = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: treatments,
-      datasets: [
-        { label: 'CH₄ flux (mg/m²/h)', data: ch4_by_treat, backgroundColor: '#2d6a4f99', borderColor: '#2d6a4f', borderWidth: 2, yAxisID: 'y1' },
-        { label: 'CO₂ flux (mg/m²/h)', data: co2_by_treat, backgroundColor: '#f4a26199', borderColor: '#f4a261', borderWidth: 2, yAxisID: 'y2' }
-      ]
-    },
-    options: {
-      plugins: { legend: { position: 'top' }, title: { display: true, text: 'Mean Flux by Treatment' } },
-      scales: {
-        y1: { type: 'linear', position: 'left', title: { display: true, text: 'CH₄ flux (mg/m²/h)' } },
-        y2: { type: 'linear', position: 'right', title: { display: true, text: 'CO₂ flux (mg/m²/h)' }, grid: { drawOnChartArea: false } }
-      }
-    }
+function renderBarSDCharts(){
+  const treatments=[...new Set(state.results.map(r=>r.treatment))];
+  const palette=['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12'];
+  const colors=treatments.map((_,i)=>palette[i%palette.length]);
+  const errorBarPlugin={id:'errorBar',afterDatasetsDraw(chart){
+    const{ctx,data,scales:{x,y}}=chart;
+    (data.datasets[0]?.data||[]).forEach((val,i)=>{
+      const sd=data.datasets[0].errorBars?.[i]||0; if(!sd||!isFinite(val))return;
+      const xP=x.getPixelForIndex(i),yT=y.getPixelForValue(val+sd),yB=y.getPixelForValue(val-sd),w=6;
+      ctx.save();ctx.strokeStyle='#1a3a2a';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(xP,yT);ctx.lineTo(xP,yB);
+      ctx.moveTo(xP-w,yT);ctx.lineTo(xP+w,yT);ctx.moveTo(xP-w,yB);ctx.lineTo(xP+w,yB);
+      ctx.stroke();ctx.restore();
+    });
+  }};
+  ['ch4','co2'].forEach(gas=>{
+    const cid=`chart-barsd-${gas}`;
+    if(state.mainCharts[cid])state.mainCharts[cid].destroy();
+    const canvas=document.getElementById(cid); if(!canvas)return;
+    const M=gas==='ch4'?'CH\u2084':'CO\u2082';
+    const key=gas==='ch4'?'flux_ch4_day':'flux_co2_day';
+    const means=treatments.map(t=>{const vs=state.results.filter(r=>r.treatment===t).map(r=>r[key]).filter(v=>isFinite(v));return vs.length?vs.reduce((a,b)=>a+b)/vs.length:0;});
+    const sds=treatments.map(t=>{const vs=state.results.filter(r=>r.treatment===t).map(r=>r[key]).filter(v=>isFinite(v));return vs.length>1?stdDev(vs):0;});
+    state.mainCharts[cid]=new Chart(canvas,{type:'bar',plugins:[errorBarPlugin],
+      data:{labels:treatments,datasets:[{label:`${M} (mg m\u207b\u00b2 dia\u207b\u00b9)`,data:means,errorBars:sds,backgroundColor:colors.map(c=>c+'bb'),borderColor:colors,borderWidth:2,borderRadius:6}]},
+      options:{animation:false,plugins:{legend:{display:false},title:{display:true,text:`${M} \u2014 m\u00e9dia \u00b1 DP por tratamento (mg m\u207b\u00b2 dia\u207b\u00b9)`,font:{size:13}}},scales:{y:{title:{display:true,text:`mg ${M} m\u207b\u00b2 dia\u207b\u00b9`},beginAtZero:false}}}});
   });
 }
 
-function renderTreatmentCharts() {
-  // CH4 per treatment
-  const c1 = document.getElementById('chart-ch4-treat');
-  const c2 = document.getElementById('chart-co2-treat');
-  if (state.mainCharts['t_ch4']) state.mainCharts['t_ch4'].destroy();
-  if (state.mainCharts['t_co2']) state.mainCharts['t_co2'].destroy();
+function setJitterGas(gas){
+  state.jitterGas=gas;
+  document.getElementById('jitter-ch4-btn').className=gas==='ch4'?'btn btn-sm btn-primary':'btn btn-sm btn-ghost';
+  document.getElementById('jitter-co2-btn').className=gas==='co2'?'btn btn-sm btn-primary':'btn btn-sm btn-ghost';
+  renderJitter(gas);
+}
 
-  const labels = state.results.map(r=>`#${r.num} ${r.treatment}`);
-  const ch4s = state.results.map(r=>r.flux_ch4);
-  const co2s = state.results.map(r=>r.flux_co2);
-  const colors = state.results.map(r => treatColor(r.treatment));
-
-  state.mainCharts['t_ch4'] = new Chart(c1, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'CH₄ flux (mg/m²/h)', data: ch4s, backgroundColor: colors.map(c=>c+'bb'), borderColor: colors, borderWidth: 2 }]
-    },
-    options: {
-      plugins: { legend: { display: false }, title: { display: true, text: 'CH₄ Flux per Measurement — corrected values' } },
-      scales: { y: { title: { display: true, text: 'CH₄ flux (mg CH₄ m⁻² h⁻¹)' } } }
-    }
+function renderJitter(gas){
+  if(state.mainCharts['jitter'])state.mainCharts['jitter'].destroy();
+  const canvas=document.getElementById('chart-jitter');
+  if(!canvas||!state.results.length)return;
+  const key=gas==='ch4'?'flux_ch4_day':'flux_co2_day';
+  const M=gas==='ch4'?'CH\u2084':'CO\u2082';
+  const palette=['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12'];
+  const treatments=[...new Set(state.results.map(r=>r.treatment))];
+  function iqrBounds(arr){const s=[...arr].sort((a,b)=>a-b);const q1=s[Math.floor(s.length*0.25)],q3=s[Math.floor(s.length*0.75)],iqr=q3-q1;return{lo:q1-1.5*iqr,hi:q3+1.5*iqr};}
+  const datasets=[];const outlierLabels=[];
+  treatments.forEach((t,ti)=>{
+    const rows=state.results.filter(r=>r.treatment===t);
+    const vals=rows.map(r=>r[key]).filter(v=>isFinite(v));
+    const med=median(vals),bounds=iqrBounds(vals),color=palette[ti%palette.length];
+    const jData=rows.map((r,i)=>{
+      const v=r[key],isOut=isFinite(v)&&(v<bounds.lo||v>bounds.hi);
+      if(isOut)outlierLabels.push(`#${r.num} ${t}: ${v.toFixed(3)}`);
+      const jx=ti+(i%2===0?-0.12:0.12)*(0.5+(i*0.13)%0.5);
+      return{x:jx,y:v,label:`#${r.num} ${r.start}`,outlier:isOut};
+    });
+    datasets.push({label:t,data:jData.filter(d=>!d.outlier).map(d=>({x:d.x,y:d.y,label:d.label})),backgroundColor:color+'cc',borderColor:color,borderWidth:1,pointRadius:7,pointHoverRadius:10,type:'scatter'});
+    if(jData.some(d=>d.outlier))datasets.push({label:t+' outlier',data:jData.filter(d=>d.outlier).map(d=>({x:d.x,y:d.y,label:d.label})),backgroundColor:'#e74c3ccc',borderColor:'#e74c3c',borderWidth:2,pointRadius:9,pointStyle:'triangle',type:'scatter'});
+    datasets.push({label:`${t} med`,data:[{x:ti-0.35,y:med},{x:ti+0.35,y:med}],borderColor:color,borderWidth:3,pointRadius:0,type:'line',tension:0});
   });
+  state.mainCharts['jitter']=new Chart(canvas,{type:'scatter',data:{datasets},options:{animation:false,
+    plugins:{legend:{display:false},title:{display:true,text:`Jitterplot \u2014 ${M} por tratamento (mg m\u207b\u00b2 dia\u207b\u00b9)`,font:{size:13}},
+      tooltip:{callbacks:{label:ctx=>`${ctx.raw.label||''}: ${ctx.parsed.y.toFixed(4)}`}}},
+    scales:{x:{type:'linear',min:-0.6,max:treatments.length-0.4,ticks:{callback:v=>{const i=Math.round(v);return treatments[i]||'';},stepSize:1},title:{display:true,text:'Tratamento'}},
+      y:{title:{display:true,text:`mg ${M} m\u207b\u00b2 dia\u207b\u00b9`}}}}});
+  const infoEl=document.getElementById('jitter-outlier-info');
+  if(outlierLabels.length){infoEl.innerHTML=`\u26a0\ufe0f <strong>${outlierLabels.length} outlier(s) IQR:</strong><br>`+outlierLabels.map(l=>`&nbsp;&nbsp;\u25b6 ${l}`).join('<br>');infoEl.style.color='#c0392b';}
+  else{infoEl.innerHTML='\u2705 Nenhum outlier pelo crit\u00e9rio IQR.';infoEl.style.color='#2d9e5f';}
+}
 
-  state.mainCharts['t_co2'] = new Chart(c2, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'CO₂ flux (mg/m²/h)', data: co2s, backgroundColor: colors.map(c=>c+'bb'), borderColor: colors, borderWidth: 2 }]
-    },
-    options: {
-      plugins: { legend: { display: false }, title: { display: true, text: 'CO₂ Flux per Measurement — corrected values' } },
-      scales: { y: { title: { display: true, text: 'CO₂ flux (mg CO₂ m⁻² h⁻¹)' } } }
-    }
+function renderResultsTable(){
+  const tbody=document.getElementById('results-tbody');tbody.innerHTML='';
+  state.results.forEach(r=>{
+    const fc=v=>(v!==null&&isFinite(v))?v.toFixed(4):'-';
+    const fc1=v=>(v!==null&&isFinite(v))?v.toFixed(1):'-';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.num}</td><td class="mono">${r.date}</td><td class="mono">${r.start}</td><td class="mono">${r.stop}</td>
+      <td><span class="tag">${r.treatment}</span></td>
+      <td class="${r.flux_ch4_day>0?'pos':'neg'} mono"><strong>${fc(r.flux_ch4_day)}</strong></td>
+      <td class="${r.flux_co2_day>0?'pos':'neg'} mono"><strong>${fc1(r.flux_co2_day)}</strong></td>
+      <td class="mono">${fc(r.flux_ch4_h)}</td><td class="mono">${fc1(r.flux_co2_h)}</td>
+      <td class="mono">${r.r2_ch4.toFixed(3)}</td><td class="mono">${r.r2_co2.toFixed(3)}</td>
+      <td class="mono">${r.slope_ch4.toExponential(3)}</td><td class="mono">${r.slope_co2.toExponential(3)}</td>
+      <td>${r.n_pts}</td><td><em style="font-size:0.8rem;color:var(--text-mid)">${r.note}</em></td>`;
+    tbody.appendChild(tr);
   });
 }
 
-function treatColor(t) {
-  const palette = ['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2c3e50'];
-  const treats = [...new Set(state.results.map(r=>r.treatment))];
-  return palette[treats.indexOf(t) % palette.length];
+function downloadChart(canvasId,filename){
+  const canvas=document.getElementById(canvasId);if(!canvas)return;
+  const a=document.createElement('a');a.download=`${filename}.png`;a.href=canvas.toDataURL('image/png');a.click();
 }
 
-// ============================================================
-// METHODS TEXT
-// ============================================================
-function renderMethods() {
-  const n = state.results.length;
-  const isTiger = state.instrument === 'tiger';
-  const pi = state.project.pi || 'o investigador';
-  const instrNames = {lgr:'LOS GATOS Research (LGR) laser-based microportable GHG analyzer', tiger:'Tiger microportable CO₂/CH₄ analyzer (Los Gatos Research)', picarro:'Picarro Cavity Ring-Down Spectrometer (CRDS)', licor:'LI-COR gas analyzer', other:'portable GHG analyzer'};
-  const instrName = instrNames[state.instrument] || instrNames.lgr;
-  const proj = state.project.name || 'this study';
-  document.getElementById('methods-text').innerHTML = `
-    <p>Greenhouse gas (GHG) fluxes of CH₄ and CO₂ were measured using a ${instrName}. Static closed chambers (cylindrical, diameter = ${document.getElementById('p-diam').value} cm, height = ${document.getElementById('p-height').value} cm; area = ${(Math.PI*(parseFloat(document.getElementById('p-diam').value)/2/100)**2).toFixed(5)} m², volume = ${((Math.PI*(parseFloat(document.getElementById('p-diam').value)/2)**2*parseFloat(document.getElementById('p-height').value))/1e6).toFixed(6)} m³) were deployed on ${n > 0 ? state.results[0].date : 'the measurement date'} for incubation periods of approximately ${n > 0 ? Math.round((timeStrToSec(state.results[0].stop)-timeStrToSec(state.results[0].start))/60) : '1–3'} minutes per plot.</p>
-    <br>
-    ${isTiger ? `<p><strong>Instrument calibration correction:</strong> Prior to flux calculation, a systematic calibration deviation was identified in the LGR analyzer ("Tiger" unit). A linear correction was applied to all dry-mole-fraction measurements: CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000; CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000 (R² = 1.000 for both, verified against laboratory reference values provided by R.C.H. Aben, Radboud University Nijmegen). The CO₂ correction involves a substantial slope bias (~13%), while the CH₄ bias is smaller (~2.6%). Uncorrected values were not used.</p><br>` : ''}
-    <p><strong>Flux calculation:</strong> Greenhouse gas fluxes (F) were calculated from the linear rate of concentration change within the closed chamber (dC/dt, ppm s⁻¹) according to: F = (dC/dt) × (V/A) × (P/RT) × M × 10⁻⁶ × 3600 × 10³ [mg m⁻² h⁻¹], where V is chamber volume (m³), A is chamber base area (m²), P is atmospheric pressure (Pa), R is the ideal gas constant (8.314 J mol⁻¹ K⁻¹), T is air temperature (K), M is the molar mass of the gas (CH₄: 16.04 g mol⁻¹; CO₂: 44.01 g mol⁻¹). Linear regression was performed on the concentration time series for each incubation window, and the slope was used as dC/dt. Incubation windows with anomalous concentration patterns (e.g., ebullition events, disturbances) were excluded after visual inspection of individual time series.</p>
-    <br>
-    <p>A total of ${n} incubation windows were accepted for analysis. Data analysis was performed using the Carbon-Flux platform (Ernandes Sobreira Oliveira Junior / UNEMAT, 2025).</p>`;
+function exportExcel(){
+  if(typeof XLSX==='undefined'){alert('Aguarde o SheetJS.');return;}
+  const treatments=[...new Set(state.results.map(r=>r.treatment))];
+  const h1=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','mean_H2O_ppm','n_points','Note'];
+  const d1=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day,r.flux_co2_day,r.flux_ch4_h,r.flux_co2_h,r.r2_ch4,r.r2_co2,r.slope_ch4,r.slope_co2,r.mean_h2o,r.n_pts,r.note]);
+  const h2=['Treatment','n','CH4_mean_mg_m2_day','CH4_sd','CH4_min','CH4_max','CO2_mean_mg_m2_day','CO2_sd','CO2_min','CO2_max'];
+  const d2=treatments.map(t=>{
+    const rows=state.results.filter(r=>r.treatment===t);
+    const ch4s=rows.map(r=>r.flux_ch4_day).filter(v=>isFinite(v));
+    const co2s=rows.map(r=>r.flux_co2_day).filter(v=>isFinite(v));
+    const m=arr=>arr.length?arr.reduce((a,b)=>a+b)/arr.length:null;
+    return[t,rows.length,m(ch4s),ch4s.length>1?stdDev(ch4s):null,ch4s.length?Math.min(...ch4s):null,ch4s.length?Math.max(...ch4s):null,m(co2s),co2s.length>1?stdDev(co2s):null,co2s.length?Math.min(...co2s):null,co2s.length?Math.max(...co2s):null];
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h1,...d1]),'Fluxos individuais');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h2,...d2]),'Resumo por tratamento');
+  XLSX.writeFile(wb,'carbon_flux_results.xlsx');
 }
 
-// ============================================================
-// EXPORT CSV
-// ============================================================
-function exportCSV() {
-  const headers = ['Num','Date','Start','Stop','Treatment','CH4_flux_mg_m2_h','CO2_flux_mg_m2_h','R2_CH4','R2_CO2','N_points','Note'];
-  const rows = state.results.map(r => [
-    r.num, r.date, r.start, r.stop, r.treatment,
-    r.flux_ch4 !== null ? r.flux_ch4.toFixed(6) : '',
-    r.flux_co2 !== null ? r.flux_co2.toFixed(6) : '',
-    r.r2_ch4 !== null ? r.r2_ch4.toFixed(6) : '',
-    r.r2_co2 !== null ? r.r2_co2.toFixed(6) : '',
-    r.n_pts, r.note
-  ]);
-  const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob([csvContent], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'carbon_flux_results.csv';
-  a.click();
+function exportCSV(){
+  const h=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','n_points','Note'];
+  const rows=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day?.toFixed(6),r.flux_co2_day?.toFixed(6),r.flux_ch4_h?.toFixed(6),r.flux_co2_h?.toFixed(6),r.r2_ch4?.toFixed(6),r.r2_co2?.toFixed(6),r.slope_ch4?.toExponential(8),r.slope_co2?.toExponential(8),r.n_pts,r.note]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download='carbon_flux_results.csv';a.click();
+}
+
+function renderMethods(){
+  const n=state.results.length,isTiger=state.instrument==='tiger';
+  const iN={lgr:'LOS GATOS Research (LGR) microportable GHG analyzer',tiger:'Tiger microportable CO\u2082/CH\u2084 analyzer (Los Gatos Research)',picarro:'Picarro CRDS',licor:'LI-COR gas analyzer',other:'portable GHG analyzer'};
+  const ex=state.results[0];const dur=ex?Math.round((timeStrToSec(ex.stop)-timeStrToSec(ex.start))/60):'1-3';
+  document.getElementById('methods-text').innerHTML=`
+    <p>Greenhouse gas (GHG) fluxes of CH\u2084 and CO\u2082 were measured using a ${iN[state.instrument||'lgr']}. Static closed chambers were deployed for approximately ${dur} minutes per plot.</p><br>
+    ${isTiger?`<p><strong>Calibration correction (Tiger):</strong> CH\u2084_corr = 0.97377900 \u00d7 [CH\u2084]d_ppm + 0.01870000; CO\u2082_corr = 0.86616349 \u00d7 [CO\u2082]d_ppm + 5.26790000 (R\u00b2 = 1.000, R.C.H. Aben, Radboud University).</p><br>`:''}
+    <p><strong>Flux calculation (Zhao et al. 2018):</strong> F [\u03bcmol m\u207b\u00b2 s\u207b\u00b9] = (dC/dt) \u00d7 (V/A) \u00d7 P \u00d7 (1\u2212H\u2082O/10\u2076) / (R \u00d7 T), where V = total system volume including tubing and analyzer (m\u00b3), A = chamber base area (m\u00b2), P = pressure (Pa), R = 8.31446 J mol\u207b\u00b9 K\u207b\u00b9, T = air temperature (K). Converted to mg CH\u2084 m\u207b\u00b2 day\u207b\u00b9 (M = 16.04246 g mol\u207b\u00b9) and mg CO\u2082 m\u207b\u00b2 day\u207b\u00b9 (M = 44.0095 g mol\u207b\u00b9). Outliers detected by IQR criterion. n = ${n} windows accepted.</p>`;
 }
 
 // ============================================================
