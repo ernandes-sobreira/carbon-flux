@@ -616,8 +616,16 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
 <!-- ============ SECTION: UPLOAD ============ -->
 <div class="section" id="section-upload">
-  <div class="section-title">Data Upload</div>
-  <div class="section-sub">Upload the raw TXT file from the LGR analyzer and the Times.xlsx file with incubation window metadata. Do not modify the raw TXT — it is read as-is from the instrument.</div>
+  <div class="section-title">Upload de Dados</div>
+  <div class="section-sub">Carregue o arquivo TXT bruto do analisador LGR e o arquivo Times.xlsx com as janelas de incubação. Não modifique o TXT — ele é lido exatamente como sai do aparelho.</div>
+
+  <div class="alert alert-info" style="margin-bottom:20px;">
+    📋 <strong>Não tem o Times.xlsx ainda?</strong> &nbsp;
+    Use o template abaixo como modelo. Ele contém todas as colunas obrigatórias no formato correto (compatível com o Carbon-Flux <em>e</em> com o script R do Radboud).
+    Preencha com suas medições e salve como <code>.xlsx</code>.
+    <br><br>
+    <strong>ATENÇÃO:</strong> Os horários devem ser digitados como <strong>texto</strong> no formato <code>HH:MM:SS</code> (ex: <code>13:03:30</code>) e a data como <code>YYYY-MM-DD</code> (ex: <code>2025-08-26</code>). Não use formato de hora/data do Excel (números seriais).
+  </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
     <div class="card">
