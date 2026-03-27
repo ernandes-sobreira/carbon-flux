@@ -998,54 +998,108 @@ function handleXlsxUpload(event) {
 function parseXlsxBuffer(arrayBuf, file) {
   try {
     const data = new Uint8Array(arrayBuf);
-    // cellDates:true → SheetJS entrega Date objects para células de data/hora
     const wb = XLSX.read(data, { type: 'array', cellDates: true });
 
-    console.log('[Carbon-Flux] Abas encontradas no xlsx:', wb.SheetNames);
+    console.log('[Carbon-Flux] Abas no xlsx:', wb.SheetNames);
 
-    // Encontra a aba correta: procura a que tem a coluna "used_start"
-    // Se não achar, usa a primeira aba
-    let ws = null;
-    let sheetUsed = wb.SheetNames[0];
+    // Encontra aba e linha de cabeçalho corretas
+    // O template tem linhas extras de título antes dos cabeçalhos
+    let bestSheet = null, bestSheetName = wb.SheetNames[0], headerRow = 0;
 
     for (const name of wb.SheetNames) {
       const sheet = wb.Sheets[name];
-      const json = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true, cellDates: true, header: 1 });
-      if (json.length > 0) {
-        const headers = json[0].map(h => String(h).trim().toLowerCase());
-        console.log(`[Carbon-Flux] Aba "${name}" headers:`, headers);
-        if (headers.includes('used_start') || headers.includes('start')) {
-          ws = sheet;
-          sheetUsed = name;
-          console.log(`[Carbon-Flux] Usando aba: "${name}"`);
+      // Lê como array de arrays para encontrar a linha de cabeçalho
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+      console.log(`[Carbon-Flux] Aba "${name}" — ${raw.length} linhas`);
+
+      for (let ri = 0; ri < Math.min(raw.length, 10); ri++) {
+        const row = raw[ri].map(v => String(v).trim().toLowerCase());
+        if (row.includes('used_start') || row.includes('start')) {
+          console.log(`[Carbon-Flux] Cabeçalho encontrado na aba "${name}", linha ${ri + 1}:`, raw[ri]);
+          bestSheet = sheet;
+          bestSheetName = name;
+          headerRow = ri; // índice 0-based da linha de cabeçalho
           break;
         }
       }
+      if (bestSheet) break;
     }
 
-    // Fallback: primeira aba
-    if (!ws) {
-      ws = wb.Sheets[wb.SheetNames[0]];
-      sheetUsed = wb.SheetNames[0];
-      console.warn('[Carbon-Flux] Coluna "used_start" não encontrada. Usando primeira aba:', sheetUsed);
+    if (!bestSheet) {
+      bestSheet = wb.Sheets[wb.SheetNames[0]];
+      bestSheetName = wb.SheetNames[0];
+      headerRow = 0;
+      console.warn('[Carbon-Flux] Coluna "used_start" não encontrada — usando linha 1 como cabeçalho');
     }
 
-    const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true, cellDates: true });
+    // Lê os dados pulando as linhas antes do cabeçalho
+    // range personalizado: começa na linha do cabeçalho
+    const rawAll = XLSX.utils.sheet_to_json(bestSheet, {
+      header: 1, defval: '', raw: true, cellDates: true
+    });
 
-    console.log(`[Carbon-Flux] Linhas lidas da aba "${sheetUsed}":`, json.length);
+    // Linha headerRow = nomes das colunas, linhas seguintes = dados
+    // Mas pula a linha imediatamente após o cabeçalho se for linha de descrição
+    // (detecta: se a linha logo abaixo do cabeçalho NÃO tem valores numéricos em colunas de número)
+    const headers = rawAll[headerRow].map(v => String(v).trim());
+    
+    // Encontra índices das colunas-chave
+    const iStart = headers.indexOf('used_start');
+    const iDate  = headers.findIndex(h => h === 'Date');
+    const iTa    = headers.findIndex(h => h === 'Ta');
+
+    // Determina a primeira linha de dados reais
+    // Pula linhas que são descrições como "HH:MM:SS", "YYYY-MM-DD", "°C" etc.
+    let dataStartRow = headerRow + 1;
+    while (dataStartRow < rawAll.length) {
+      const row = rawAll[dataStartRow];
+      const startVal = iStart >= 0 ? String(row[iStart] || '').trim() : '';
+      const dateVal  = iDate  >= 0 ? String(row[iDate]  || '').trim() : '';
+      const taVal    = iTa    >= 0 ? row[iTa] : '';
+
+      // Dados reais: used_start é HH:MM:SS com números, OU Date é YYYY-MM-DD, OU Ta é número
+      const validTime = /^\d{1,2}:\d{2}(:\d{2})?$/.test(startVal);
+      const validDate = /^\d{4}-\d{2}-\d{2}/.test(dateVal);
+      const validTa   = taVal !== '' && !isNaN(parseFloat(taVal)) && isFinite(taVal);
+      // Date objects do SheetJS também são válidos
+      const isDateObj = row[iStart] instanceof Date || row[iDate] instanceof Date;
+
+      if (validTime || validDate || validTa || isDateObj) break;
+      console.log(`[Carbon-Flux] Pulando linha ${dataStartRow + 1} (instrução):`, String(row[iStart]||''), String(row[iDate]||''));
+      dataStartRow++;
+    }
+
+    console.log(`[Carbon-Flux] Headers (linha ${headerRow + 1}):`, headers);
+    console.log(`[Carbon-Flux] Dados começam na linha ${dataStartRow + 1}`);
+
+    // Converte para array de objetos usando os headers corretos
+    const json = rawAll.slice(dataStartRow).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { if (h) obj[h] = row[i] !== undefined ? row[i] : ''; });
+      return obj;
+    }).filter(row => {
+      // Remove linhas completamente vazias
+      return Object.values(row).some(v => v !== '' && v !== null && v !== undefined);
+    });
+
+    console.log(`[Carbon-Flux] ${json.length} linhas de dados lidas da aba "${bestSheetName}"`);
     if (json.length > 0) {
-      console.log('[Carbon-Flux] Chaves da primeira linha:', Object.keys(json[0]));
-      console.log('[Carbon-Flux] Primeira linha completa:', JSON.parse(JSON.stringify(json[0],
-        (k, v) => v instanceof Date ? `[Date: ${v.toISOString()}]` : v)));
+      const r0 = json[0];
+      const toStr = v => v instanceof Date ? `[Date: ${v.toISOString()}]` : `(${typeof v}) ${JSON.stringify(v)}`;
+      console.log('[Carbon-Flux] Linha 0:');
+      console.log('  used_start:', toStr(r0['used_start']), '→', excelTimeToHMS(r0['used_start']));
+      console.log('  used_stop: ', toStr(r0['used_stop']),  '→', excelTimeToHMS(r0['used_stop']));
+      console.log('  Date:      ', toStr(r0['Date']),        '→', excelDateToString(r0['Date']));
+      console.log('  Ta:        ', toStr(r0['Ta']));
     }
 
     state.timesData = json;
     buildWindowsFromTimes();
-    showFileItem('list-xlsx', file, 'ok', `${json.length} janelas · aba "${sheetUsed}"`);
+    showFileItem('list-xlsx', file, 'ok', `${json.length} janelas · aba "${bestSheetName}"`);
     showDataPreview();
   } catch (err) {
     console.error('[Carbon-Flux] Erro ao parsear xlsx:', err);
-    showFileItem('list-xlsx', file, 'err', 'Erro ao parsear xlsx: ' + err.message);
+    showFileItem('list-xlsx', file, 'err', 'Erro: ' + err.message);
   }
 }
 
