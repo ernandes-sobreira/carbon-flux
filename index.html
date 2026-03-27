@@ -376,6 +376,8 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 .chart-full { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
 .chart-full canvas { max-height: 380px; }
 
+.inst-panel { transition: all 0.2s; }
+
 /* ---- CORRECTION BOX ---- */
 .correction-box {
   background: #fffbf0;
@@ -497,7 +499,7 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
     <button onclick="showSection('curves')">📈 Curves</button>
     <button onclick="showSection('results')">📊 Results</button>
   </nav>
-  <div class="badge" id="status-badge">LGR · Tiger Correction ON</div>
+  <div class="badge" id="status-badge">Instrumento: LGR</div>
 </div>
 
 <main>
@@ -512,12 +514,62 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
     </div>
   </div>
 
-  <div class="correction-box">
-    <h4>⚠️ Instrument Calibration Correction — Tiger Analyzer (active)</h4>
-    <p>Ralf Aben (Radboud University) identified a substantial calibration deviation in the Tiger microportable CO₂/CH₄ analyzer. The following linear corrections are applied to all <strong>dry-mole-fraction</strong> readings before any flux calculation:</p>
-    <div class="formula">CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000</div>
-    <div class="formula">CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000</div>
-    <p>These equations were derived from the Example_of_correction.xlsx file (R² = 1.000 for both). The correction is linear, using the dry-mole-fraction columns ([CH₄]d_ppm and [CO2]d_ppm) as input. The CO₂ deviation is substantial (~12.5% bias in slope); the CH₄ deviation is smaller (~2.6%). H₂O is not corrected by this equation. Always use corrected values for flux calculations.</p>
+  <!-- INSTRUMENT SELECTOR TABS -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-title">🔭 Selecione o instrumento de medição</div>
+    <div class="card-sub">A correção de calibração (Tiger) só é aplicada ao aparelho Tiger. Para LGR e outros aparelhos, os valores são usados diretamente sem correção.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="btn btn-primary" id="btn-inst-lgr" onclick="setInstrument('lgr')">📡 LOS GATOS (LGR)</button>
+      <button class="btn btn-ghost" id="btn-inst-tiger" onclick="setInstrument('tiger')">🐯 Tiger Microportable</button>
+      <button class="btn btn-ghost" id="btn-inst-picarro" onclick="setInstrument('picarro')">🔬 Picarro</button>
+      <button class="btn btn-ghost" id="btn-inst-licor" onclick="setInstrument('licor')">🌿 LI-COR</button>
+      <button class="btn btn-ghost" id="btn-inst-other" onclick="setInstrument('other')">⚙️ Outro</button>
+    </div>
+
+    <!-- Panel LGR -->
+    <div id="panel-lgr" class="inst-panel">
+      <div class="alert alert-info">
+        <div>
+          <strong>LOS GATOS Research (LGR) — Microportable GHG Analyzer</strong><br>
+          Sem correção de calibração adicional. Os valores brutos de fração molar seca ([CH₄]d_ppm, [CO2]d_ppm) são usados diretamente no cálculo de fluxo.
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Tiger -->
+    <div id="panel-tiger" class="inst-panel" style="display:none;">
+      <div class="correction-box">
+        <h4>⚠️ Correção de Calibração Obrigatória — Tiger Analyzer</h4>
+        <p>Ralf Aben (Radboud University) identificou desvio substancial de calibração no analisador Tiger microportable. As seguintes correções lineares são aplicadas aos valores de <strong>fração molar seca</strong> antes de qualquer cálculo de fluxo:</p>
+        <div class="formula">CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000</div>
+        <div class="formula">CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000</div>
+        <p>Equações derivadas de Example_of_correction.xlsx (R² = 1.000 para ambas). O desvio de CO₂ é substancial (~12.5% no slope); o de CH₄ é menor (~2.6%). O H₂O não é corrigido. <strong>Valores não corrigidos não devem ser usados.</strong></p>
+      </div>
+    </div>
+
+    <!-- Panel Picarro -->
+    <div id="panel-picarro" class="inst-panel" style="display:none;">
+      <div class="alert alert-info">
+        <div><strong>Picarro Cavity Ring-Down Spectroscopy (CRDS)</strong><br>
+        Sem correção de calibração adicional. O Picarro já aplica correção interna de vapor de água. Colunas esperadas no TXT: Time, CO2_dry, CH4_dry, H2O.</div>
+      </div>
+    </div>
+
+    <!-- Panel LI-COR -->
+    <div id="panel-licor" class="inst-panel" style="display:none;">
+      <div class="alert alert-info">
+        <div><strong>LI-COR Gas Analyzer</strong><br>
+        Sem correção de calibração adicional. Verifique se os dados exportados já estão em base seca (dry basis) antes de carregar.</div>
+      </div>
+    </div>
+
+    <!-- Panel Other -->
+    <div id="panel-other" class="inst-panel" style="display:none;">
+      <div class="alert alert-warn">
+        <div><strong>Outro instrumento</strong><br>
+        Sem correção automática. Certifique-se de que as colunas de concentração estão em ppm (fração molar seca). A plataforma usará as colunas [CH₄]d_ppm e [CO2]d_ppm ou equivalentes mapeados.</div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -542,19 +594,8 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
           <input type="text" id="pi-inst" placeholder="e.g. UNEMAT / Radboud University">
         </div>
         <div class="form-group">
-          <label>Measurement instrument</label>
-          <select id="instrument">
-            <option value="lgr">LOS GATOS (LGR) — Microportable GHG Analyzer</option>
-            <option value="tiger">Tiger Microportable CO₂/CH₄ (+ Tiger Correction)</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Apply calibration correction?</label>
-          <select id="apply-corr">
-            <option value="yes">Yes — apply Tiger linear correction (recommended)</option>
-            <option value="no">No — use raw values (not recommended)</option>
-          </select>
+          <label>Instrumento (selecionado acima)</label>
+          <input type="text" id="instrument-display" readonly style="background:#f0f4f0;color:var(--text-mid);" value="LOS GATOS (LGR)">
         </div>
         <div class="form-group">
           <label>Gases to analyze</label>
@@ -805,9 +846,43 @@ function saveProject() {
     name: document.getElementById('proj-name').value,
     pi: document.getElementById('pi-name').value,
     inst: document.getElementById('pi-inst').value,
-    applyCorr: document.getElementById('apply-corr').value === 'yes'
+    instrument: state.instrument || 'lgr',
+    applyCorr: (state.instrument === 'tiger')
   };
-  alert('✅ Project settings saved!\n\nNow go to the Data tab to upload your files.');
+  alert('✅ Configurações salvas!\n\nVá para a aba Dados para carregar seus arquivos.');
+}
+
+// ============================================================
+// INSTRUMENT SELECTION
+// ============================================================
+state.instrument = 'lgr'; // default
+
+function setInstrument(inst) {
+  state.instrument = inst;
+  state.project.instrument = inst;
+  state.project.applyCorr = (inst === 'tiger');
+
+  // Update buttons
+  ['lgr','tiger','picarro','licor','other'].forEach(k => {
+    const btn = document.getElementById('btn-inst-'+k);
+    if (btn) btn.className = k === inst ? 'btn btn-primary' : 'btn btn-ghost';
+  });
+
+  // Show/hide panels
+  document.querySelectorAll('.inst-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('panel-'+inst);
+  if (panel) panel.style.display = 'block';
+
+  // Update display field and badge
+  const labels = {lgr:'LOS GATOS (LGR)', tiger:'Tiger Microportable', picarro:'Picarro CRDS', licor:'LI-COR', other:'Outro instrumento'};
+  const dispField = document.getElementById('instrument-display');
+  if (dispField) dispField.value = labels[inst] || inst;
+
+  const badge = document.getElementById('status-badge');
+  if (badge) {
+    badge.textContent = inst === 'tiger' ? '🐯 Tiger · Correção ON' : `📡 ${labels[inst]||inst} · Sem correção`;
+    badge.style.background = inst === 'tiger' ? '#e76f51' : '#2d6a4f';
+  }
 }
 
 // ============================================================
@@ -921,25 +996,76 @@ function handleXlsxUpload(event) {
 function buildWindowsFromTimes() {
   if (!state.timesData) return;
   state.windows = state.timesData.map((row, i) => {
-    // Support both naming conventions
-    const start = row['used_start'] || row['start'] || '';
-    const stop = row['used_stop'] || row['stop'] || '';
-    const dateStr = row['Date'] ? String(row['Date']).substring(0,10) : '';
+    const start_raw = row['used_start'] || row['start'] || '';
+    const stop_raw  = row['used_stop']  || row['stop']  || '';
+    const date_raw  = row['Date'] || '';
+
     return {
-      num: row['Num'] || (i+1),
-      date: dateStr,
-      start: String(start).substring(0,8),
-      stop: String(stop).substring(0,8),
-      ta: parseFloat(row['Ta'] || row['Ta_C'] || 20),
-      pressure: parseFloat(row['luchtdruk'] || row['pressure_hPa'] || 1013),
-      diam: parseFloat(row['chamber width/diameter'] || row['diam_cm'] || 15.5),
-      height: parseFloat(row['chamber height'] || row['height_cm'] || 29.5),
-      shape: (row['chamber shape'] || 'round').toLowerCase(),
+      num:       row['Num'] || (i+1),
+      date:      excelDateToString(date_raw),
+      start:     excelTimeToHMS(start_raw),
+      stop:      excelTimeToHMS(stop_raw),
+      ta:        parseFloat(row['Ta'] || row['Ta_C'] || 20),
+      pressure:  parseFloat(row['luchtdruk'] || row['pressure_hPa'] || 1013),
+      diam:      parseFloat(row['chamber width/diameter'] || row['diam_cm'] || 15.5),
+      height:    parseFloat(row['chamber height'] || row['height_cm'] || 29.5),
+      shape:     (row['chamber shape'] || 'round').toLowerCase(),
       treatment: row['plot'] || row['treatment'] || '',
-      note: row['Unnamed: 12'] || row['note'] || '',
-      tube_l: parseFloat(row['tube.l'] || 20)
+      note:      row['Unnamed: 12'] || row['note'] || '',
+      tube_l:    parseFloat(row['tube.l'] || 20)
     };
   });
+}
+
+// Excel serial date → "YYYY-MM-DD"
+// Excel base: December 30, 1899 (accounts for the 1900 leap year bug)
+function excelDateToString(val) {
+  if (!val && val !== 0) return '';
+  const s = String(val).trim();
+
+  // Already a real date string like "2025-08-26" or "26/08/2025"
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    const p = s.split('/');
+    return `${p[2]}-${p[1]}-${p[0]}`;
+  }
+  // Excel serial number (integer or float >= 1)
+  const n = parseFloat(s);
+  if (!isNaN(n) && n > 1000) {
+    // Excel base date: Dec 30, 1899
+    const base = new Date(1899, 11, 30); // month 11 = December
+    const d = new Date(base.getTime() + Math.floor(n) * 86400000);
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    const dy = String(d.getDate()).padStart(2,'0');
+    return `${yr}-${mo}-${dy}`;
+  }
+  // Datetime string from SheetJS like "2025-08-26T00:00:00.000Z"
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.substring(0,10);
+  return s;
+}
+
+// Excel fractional time → "HH:MM:SS"
+// E.g. 0.544097 → 13:03:30
+function excelTimeToHMS(val) {
+  if (!val && val !== 0) return '';
+  const s = String(val).trim();
+
+  // Already HH:MM:SS
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
+    const p = s.split(':');
+    return `${p[0].padStart(2,'0')}:${p[1]}:${p[2]||'00'}`;
+  }
+  // Fractional (0.0 – 1.0)
+  const n = parseFloat(s);
+  if (!isNaN(n) && n >= 0 && n < 1) {
+    const totalSec = Math.round(n * 86400);
+    const hh = Math.floor(totalSec / 3600);
+    const mm = Math.floor((totalSec % 3600) / 60);
+    const ss = totalSec % 60;
+    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
+  return s;
 }
 
 function addManualWindow() {
@@ -977,7 +1103,7 @@ function processData() {
 
 function buildCurves() {
   state.curves = [];
-  const applyCorr = state.project.applyCorr !== false; // default true
+  const applyCorr = (state.instrument === 'tiger');
 
   state.windows.forEach((win, idx) => {
     // Get data for this window
@@ -1041,9 +1167,17 @@ function getRowsForWindow(win) {
 }
 
 function timeStrToSec(str) {
-  if (!str) return 0;
-  const p = String(str).split(':');
-  return parseInt(p[0]||0)*3600 + parseInt(p[1]||0)*60 + parseInt(p[2]||0);
+  if (!str && str !== 0) return 0;
+  const s = String(str).trim();
+  // HH:MM:SS or HH:MM
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
+    const p = s.split(':');
+    return parseInt(p[0]||0)*3600 + parseInt(p[1]||0)*60 + parseInt(p[2]||0);
+  }
+  // Excel fractional (0.0 – 1.0)
+  const n = parseFloat(s);
+  if (!isNaN(n) && n >= 0 && n < 1) return Math.round(n * 86400);
+  return 0;
 }
 
 function linearFit(x, y) {
@@ -1382,13 +1516,15 @@ function treatColor(t) {
 // ============================================================
 function renderMethods() {
   const n = state.results.length;
-  const applyCorr = state.project.applyCorr !== false;
-  const pi = state.project.pi || 'the investigator';
+  const isTiger = state.instrument === 'tiger';
+  const pi = state.project.pi || 'o investigador';
+  const instrNames = {lgr:'LOS GATOS Research (LGR) laser-based microportable GHG analyzer', tiger:'Tiger microportable CO₂/CH₄ analyzer (Los Gatos Research)', picarro:'Picarro Cavity Ring-Down Spectrometer (CRDS)', licor:'LI-COR gas analyzer', other:'portable GHG analyzer'};
+  const instrName = instrNames[state.instrument] || instrNames.lgr;
   const proj = state.project.name || 'this study';
   document.getElementById('methods-text').innerHTML = `
-    <p>Greenhouse gas (GHG) fluxes of CH₄ and CO₂ were measured using a LOS GATOS Research (LGR) laser-based, microportable GHG analyzer. Static closed chambers (cylindrical, diameter = ${document.getElementById('p-diam').value} cm, height = ${document.getElementById('p-height').value} cm; area = ${(Math.PI*(parseFloat(document.getElementById('p-diam').value)/2/100)**2).toFixed(5)} m², volume = ${((Math.PI*(parseFloat(document.getElementById('p-diam').value)/2)**2*parseFloat(document.getElementById('p-height').value))/1e6).toFixed(6)} m³) were deployed on ${n > 0 ? state.results[0].date : 'the measurement date'} for incubation periods of approximately ${n > 0 ? Math.round((timeStrToSec(state.results[0].stop)-timeStrToSec(state.results[0].start))/60) : '1–3'} minutes per plot.</p>
+    <p>Greenhouse gas (GHG) fluxes of CH₄ and CO₂ were measured using a ${instrName}. Static closed chambers (cylindrical, diameter = ${document.getElementById('p-diam').value} cm, height = ${document.getElementById('p-height').value} cm; area = ${(Math.PI*(parseFloat(document.getElementById('p-diam').value)/2/100)**2).toFixed(5)} m², volume = ${((Math.PI*(parseFloat(document.getElementById('p-diam').value)/2)**2*parseFloat(document.getElementById('p-height').value))/1e6).toFixed(6)} m³) were deployed on ${n > 0 ? state.results[0].date : 'the measurement date'} for incubation periods of approximately ${n > 0 ? Math.round((timeStrToSec(state.results[0].stop)-timeStrToSec(state.results[0].start))/60) : '1–3'} minutes per plot.</p>
     <br>
-    ${applyCorr ? `<p><strong>Instrument calibration correction:</strong> Prior to flux calculation, a systematic calibration deviation was identified in the LGR analyzer ("Tiger" unit). A linear correction was applied to all dry-mole-fraction measurements: CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000; CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000 (R² = 1.000 for both, verified against laboratory reference values provided by R.C.H. Aben, Radboud University Nijmegen). The CO₂ correction involves a substantial slope bias (~13%), while the CH₄ bias is smaller (~2.6%). Uncorrected values were not used.</p><br>` : ''}
+    ${isTiger ? `<p><strong>Instrument calibration correction:</strong> Prior to flux calculation, a systematic calibration deviation was identified in the LGR analyzer ("Tiger" unit). A linear correction was applied to all dry-mole-fraction measurements: CH₄_corrected = 0.97377900 × [CH₄]d_ppm + 0.01870000; CO₂_corrected = 0.86616349 × [CO₂]d_ppm + 5.26790000 (R² = 1.000 for both, verified against laboratory reference values provided by R.C.H. Aben, Radboud University Nijmegen). The CO₂ correction involves a substantial slope bias (~13%), while the CH₄ bias is smaller (~2.6%). Uncorrected values were not used.</p><br>` : ''}
     <p><strong>Flux calculation:</strong> Greenhouse gas fluxes (F) were calculated from the linear rate of concentration change within the closed chamber (dC/dt, ppm s⁻¹) according to: F = (dC/dt) × (V/A) × (P/RT) × M × 10⁻⁶ × 3600 × 10³ [mg m⁻² h⁻¹], where V is chamber volume (m³), A is chamber base area (m²), P is atmospheric pressure (Pa), R is the ideal gas constant (8.314 J mol⁻¹ K⁻¹), T is air temperature (K), M is the molar mass of the gas (CH₄: 16.04 g mol⁻¹; CO₂: 44.01 g mol⁻¹). Linear regression was performed on the concentration time series for each incubation window, and the slope was used as dC/dt. Incubation windows with anomalous concentration patterns (e.g., ebullition events, disturbances) were excluded after visual inspection of individual time series.</p>
     <br>
     <p>A total of ${n} incubation windows were accepted for analysis. Data analysis was performed using the Carbon-Flux platform (Ernandes Sobreira Oliveira Junior / UNEMAT, 2025).</p>`;
@@ -1427,12 +1563,17 @@ function showDataPreview() {
   let html = '';
   if (state.txtData) {
     const row0 = state.txtData[0];
-    html += `<div class="alert alert-info">✅ TXT parsed: <strong>${state.txtData.length} rows</strong> — from ${state.txtData[0]._dt?.toLocaleString()} to ${state.txtData[state.txtData.length-1]._dt?.toLocaleString()}</div>`;
-    html += `<p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:12px;">Sample corrected values (row 1): CH₄ raw = ${row0._ch4d.toFixed(4)} ppm → <strong>corrected = ${row0._ch4_corr.toFixed(4)} ppm</strong> | CO₂ raw = ${row0._co2d.toFixed(2)} ppm → <strong>corrected = ${row0._co2_corr.toFixed(2)} ppm</strong></p>`;
+    html += `<div class="alert alert-info">✅ TXT carregado: <strong>${state.txtData.length} linhas</strong> — de ${state.txtData[0]._dt?.toLocaleString('pt-BR')} até ${state.txtData[state.txtData.length-1]._dt?.toLocaleString('pt-BR')}</div>`;
+    const isTiger = state.instrument === 'tiger';
+    if (isTiger) {
+      html += `<p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:12px;">Valores (linha 1): CH₄ bruto = ${row0._ch4d.toFixed(4)} ppm → <strong style="color:#2d6a4f">corrigido = ${row0._ch4_corr.toFixed(4)} ppm</strong> &nbsp;|&nbsp; CO₂ bruto = ${row0._co2d.toFixed(2)} ppm → <strong style="color:#2d6a4f">corrigido = ${row0._co2_corr.toFixed(2)} ppm</strong> <span class="tag tag-orange">🐯 Tiger correction ON</span></p>`;
+    } else {
+      html += `<p style="font-size:0.85rem;color:var(--text-mid);margin-bottom:12px;">Valores (linha 1): CH₄ dry = <strong>${row0._ch4d.toFixed(4)} ppm</strong> &nbsp;|&nbsp; CO₂ dry = <strong>${row0._co2d.toFixed(2)} ppm</strong> &nbsp;|&nbsp; H₂O = <strong>${row0._h2o.toFixed(0)} ppm</strong> <span class="tag">📡 Sem correção</span></p>`;
+    }
   }
   if (state.windows.length > 0) {
     html += `<div class="alert alert-info">✅ ${state.windows.length} measurement window(s) loaded</div>`;
-    html += `<div class="times-editor"><table><thead><tr><th>#</th><th>Date</th><th>Start</th><th>Stop</th><th>Treatment</th><th>Ta (°C)</th><th>P (hPa)</th><th>Note</th></tr></thead><tbody>`;
+    html += `<div class="times-editor"><table><thead><tr><th>#</th><th>Data</th><th>Início</th><th>Fim</th><th>Tratamento</th><th>Ta (°C)</th><th>P (hPa)</th><th>Nota</th></tr></thead><tbody>`;
     state.windows.forEach((w, i) => {
       html += `<tr>
         <td>${w.num}</td>
