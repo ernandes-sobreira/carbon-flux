@@ -663,6 +663,48 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   .results-grid { grid-template-columns: 1fr 1fr; }
   .stat-card .stat-val { font-size: 1.2rem; }
 }
+
+/* Boxplot drag & drop */
+.bp-treat-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--green-mid); color: #fff;
+  padding: 4px 10px; border-radius: 14px;
+  font-size: 0.8rem; font-weight: 700;
+  cursor: grab; user-select: none;
+  border: none; transition: opacity 0.15s;
+}
+.bp-treat-chip:active { cursor: grabbing; opacity: 0.7; }
+.bp-treat-chip .remove-chip {
+  background: none; border: none; color: rgba(255,255,255,0.8);
+  cursor: pointer; font-size: 0.9rem; line-height: 1;
+  padding: 0 0 0 2px; margin: 0;
+}
+.bp-treat-chip .remove-chip:hover { color: #fff; }
+.bp-group-box {
+  margin-bottom: 10px;
+  border: 2px solid var(--gray-mid);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.bp-group-box.drag-over { border-color: var(--green-mid); background: var(--green-pale); }
+.bp-group-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.bp-group-name {
+  border: 1.5px solid var(--gray-mid); border-radius: 6px;
+  padding: 4px 8px; font-size: 0.85rem; font-weight: 700;
+  color: var(--green-dark); background: var(--gray-light);
+  flex: 1; max-width: 200px;
+}
+.bp-group-name:focus { outline: none; border-color: var(--green-mid); }
+.bp-group-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  min-height: 32px; padding: 4px;
+}
+.bp-group-drop-hint {
+  font-size: 0.75rem; color: var(--text-mid); font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -928,10 +970,11 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
   <div id="results-content" style="display:none;">
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('tab-summary','this')">📊 Resumo</button>
-      <button class="tab-btn" onclick="showTab('tab-jitter','this')">🔵 Jitterplot</button>
-      <button class="tab-btn" onclick="showTab('tab-table','this')">📋 Tabela</button>
-      <button class="tab-btn" onclick="showTab('tab-method','this')">📝 Métodos</button>
+      <button class="tab-btn active" onclick="showTab('tab-summary')">📊 Resumo</button>
+      <button class="tab-btn" onclick="showTab('tab-jitter')">🔵 Jitterplot</button>
+      <button class="tab-btn" onclick="showTab('tab-boxplot')">📦 Boxplot</button>
+      <button class="tab-btn" onclick="showTab('tab-table')">📋 Tabela</button>
+      <button class="tab-btn" onclick="showTab('tab-method')">📝 Métodos</button>
     </div>
 
     <!-- TAB SUMMARY -->
@@ -940,8 +983,14 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
       <!-- Summary por tratamento -->
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-title">Resumo por tratamento — média ± DP (mg m⁻² dia⁻¹)</div>
-        <div style="overflow-x:auto;margin-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div class="card-title" style="margin:0;">Resumo por tratamento — média ± DP (mg m⁻² dia⁻¹)</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-accent" onclick="exportSummaryExcel()">⬇ Excel</button>
+            <button class="btn btn-sm btn-ghost"  onclick="exportSummaryCSV()">⬇ CSV</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;margin-top:0;">
           <table class="results-table" id="summary-by-treat-table">
             <thead>
               <tr>
@@ -989,6 +1038,51 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
         <!-- Canvas com altura responsiva -->
         <div style="position:relative;width:100%;"><canvas id="chart-jitter" style="max-height:350px;"></canvas></div>
         <div id="jitter-outlier-info" style="margin-top:12px;font-size:0.85rem;line-height:1.6;"></div>
+      </div>
+    </div>
+
+    <!-- TAB BOXPLOT -->
+    <div id="tab-boxplot" class="tab-pane" style="display:none;">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">📦 Boxplot por grupo de tratamento</div>
+        <div class="card-sub">Agrupe réplicas do mesmo tratamento real (ex: CR1+CR2+CR3 = "Controle"). Arraste os tratamentos para os grupos que desejar.</div>
+
+        <!-- Seletor de gás -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+          <button class="btn btn-sm btn-primary" id="bp-ch4-btn" onclick="setBoxplotGas('ch4')">CH₄</button>
+          <button class="btn btn-sm btn-ghost"   id="bp-co2-btn" onclick="setBoxplotGas('co2')">CO₂</button>
+          <button class="btn btn-sm btn-ghost" onclick="downloadChart('chart-boxplot','boxplot')" style="margin-left:auto;">⬇ Baixar</button>
+        </div>
+
+        <!-- Interface de agrupamento -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--green-dark);margin-bottom:8px;">
+            🏷 Definir grupos — arraste tratamentos para criar seus grupos
+          </div>
+
+          <!-- Tratamentos disponíveis -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:4px;">Tratamentos disponíveis:</div>
+            <div id="bp-available" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;padding:8px;background:var(--gray-light);border-radius:8px;border:2px dashed var(--gray-mid);">
+            </div>
+          </div>
+
+          <!-- Grupos definidos -->
+          <div id="bp-groups-container">
+            <!-- Grupos dinâmicos aparecem aqui -->
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <button class="btn btn-sm btn-ghost" onclick="addBoxplotGroup()">+ Novo grupo</button>
+            <button class="btn btn-sm btn-ghost" onclick="resetBoxplotGroups()">↺ Resetar grupos</button>
+            <button class="btn btn-sm btn-primary" onclick="renderBoxplot()" style="margin-left:auto;">📦 Gerar boxplot</button>
+          </div>
+        </div>
+
+        <!-- Canvas -->
+        <div id="boxplot-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding:6px 10px;background:var(--gray-light);border-radius:8px;"></div>
+        <div style="position:relative;width:100%;"><canvas id="chart-boxplot" style="max-height:400px;"></canvas></div>
+        <div id="boxplot-stats" style="margin-top:12px;font-size:0.82rem;color:var(--text-mid);line-height:1.7;"></div>
       </div>
     </div>
 
@@ -2159,8 +2253,9 @@ function showTab(tabId){
   document.getElementById(tabId).style.display='block';
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   if(event&&event.target)event.target.classList.add('active');
-  if(tabId==='tab-jitter')renderJitter(state.jitterGas);
-  if(tabId==='tab-method')renderMethods();
+  if(tabId==='tab-jitter')  { renderJitter(state.jitterGas); }
+  if(tabId==='tab-boxplot') { initBoxplotUI(); }
+  if(tabId==='tab-method')  { renderMethods(); }
 }
 
 function renderStatCards(){
@@ -2512,6 +2607,356 @@ function showFileItem(listId, file, status, detail='') {
         ${status === 'ok' ? '✅ '+detail : status === 'err' ? '❌ '+detail : '⏳ '+status}
       </span>
     </div>`;
+}
+
+// ================================================================
+// BOXPLOT COM AGRUPAMENTO CUSTOMIZÁVEL
+// ================================================================
+state.boxplotGas = 'ch4';
+state.boxplotGroups = []; // [{name, treatments:[]}]
+
+function setBoxplotGas(gas) {
+  state.boxplotGas = gas;
+  document.getElementById('bp-ch4-btn').className = gas==='ch4'?'btn btn-sm btn-primary':'btn btn-sm btn-ghost';
+  document.getElementById('bp-co2-btn').className = gas==='co2'?'btn btn-sm btn-primary':'btn btn-sm btn-ghost';
+  renderBoxplot();
+}
+
+function initBoxplotUI() {
+  const treatments = [...new Set(state.results.map(r=>r.treatment))];
+
+  // Inicializar grupos: um por tratamento se ainda não definidos
+  if (!state.boxplotGroups.length) {
+    state.boxplotGroups = treatments.map(t => ({
+      name: t, treatments: [t]
+    }));
+  }
+
+  renderBoxplotGroupsUI();
+  renderBoxplot();
+}
+
+function renderBoxplotGroupsUI() {
+  const treatments = [...new Set(state.results.map(r=>r.treatment))];
+  const usedTreatments = new Set(state.boxplotGroups.flatMap(g=>g.treatments));
+  const available = treatments.filter(t => !usedTreatments.has(t));
+
+  // Disponíveis
+  const avEl = document.getElementById('bp-available');
+  avEl.innerHTML = available.length
+    ? available.map(t => `<span class="bp-treat-chip" draggable="true"
+        ondragstart="bpDragStart(event,'${t}','available')">${t}</span>`).join('')
+    : '<span style="font-size:0.78rem;color:var(--text-mid);font-style:italic;">Todos os tratamentos estão em grupos</span>';
+
+  // Grupos
+  const gc = document.getElementById('bp-groups-container');
+  gc.innerHTML = '';
+  state.boxplotGroups.forEach((g, gi) => {
+    const div = document.createElement('div');
+    div.className = 'bp-group-box';
+    div.setAttribute('data-gi', gi);
+    div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', e => { e.preventDefault(); div.classList.remove('drag-over'); bpDrop(e, gi); });
+
+    const colorPalette = ['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12','#e67e22'];
+    const color = colorPalette[gi % colorPalette.length];
+
+    div.innerHTML = `
+      <div class="bp-group-header">
+        <span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
+        <input class="bp-group-name" value="${g.name}" oninput="state.boxplotGroups[${gi}].name=this.value" placeholder="Nome do grupo">
+        <button class="btn btn-sm" style="background:none;border:1px solid #e0e0e0;color:#e74c3c;padding:3px 8px;"
+          onclick="removeBoxplotGroup(${gi})">✕</button>
+      </div>
+      <div class="bp-group-chips" id="bp-chips-${gi}">
+        ${g.treatments.map(t=>`<span class="bp-treat-chip" draggable="true"
+          ondragstart="bpDragStart(event,'${t}',${gi})"
+          style="background:${color};">${t}
+          <button class="remove-chip" onclick="bpRemoveChip('${t}',${gi})">×</button>
+        </span>`).join('')}
+        ${g.treatments.length===0?'<span class="bp-group-drop-hint">Arraste tratamentos aqui</span>':''}
+      </div>`;
+    gc.appendChild(div);
+  });
+}
+
+let _bpDragTreat = null;
+let _bpDragFrom = null;
+
+function bpDragStart(event, treatment, from) {
+  _bpDragTreat = treatment;
+  _bpDragFrom = from;
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function bpDrop(event, toGi) {
+  if (!_bpDragTreat) return;
+  // Remover de origem
+  if (_bpDragFrom === 'available') {
+    // já não está em nenhum grupo, só adiciona
+  } else {
+    const fromGi = parseInt(_bpDragFrom);
+    state.boxplotGroups[fromGi].treatments = state.boxplotGroups[fromGi].treatments.filter(t=>t!==_bpDragTreat);
+  }
+  // Adicionar ao destino (se ainda não estiver)
+  if (!state.boxplotGroups[toGi].treatments.includes(_bpDragTreat)) {
+    state.boxplotGroups[toGi].treatments.push(_bpDragTreat);
+  }
+  _bpDragTreat = null;
+  renderBoxplotGroupsUI();
+  renderBoxplot();
+}
+
+function bpRemoveChip(treatment, gi) {
+  state.boxplotGroups[gi].treatments = state.boxplotGroups[gi].treatments.filter(t=>t!==treatment);
+  renderBoxplotGroupsUI();
+  renderBoxplot();
+}
+
+function addBoxplotGroup() {
+  state.boxplotGroups.push({ name: `Grupo ${state.boxplotGroups.length+1}`, treatments: [] });
+  renderBoxplotGroupsUI();
+}
+
+function removeBoxplotGroup(gi) {
+  state.boxplotGroups.splice(gi, 1);
+  renderBoxplotGroupsUI();
+  renderBoxplot();
+}
+
+function resetBoxplotGroups() {
+  state.boxplotGroups = [];
+  initBoxplotUI();
+}
+
+function renderBoxplot() {
+  if (state.mainCharts['boxplot']) state.mainCharts['boxplot'].destroy();
+  const canvas = document.getElementById('chart-boxplot');
+  if (!canvas || !state.results.length) return;
+
+  const gas = state.boxplotGas;
+  const key = gas==='ch4' ? 'flux_ch4_day' : 'flux_co2_day';
+  const Mlabel = gas==='ch4' ? 'CH₄' : 'CO₂';
+  const colorPalette = ['#2d6a4f','#f4a261','#3498db','#9b59b6','#e74c3c','#1abc9c','#f39c12','#e67e22'];
+
+  // Calcular estatísticas de boxplot para cada grupo
+  const groups = state.boxplotGroups.filter(g => g.treatments.length > 0);
+  if (!groups.length) return;
+
+  const groupStats = groups.map((g, gi) => {
+    const vals = state.results
+      .filter(r => g.treatments.includes(r.treatment))
+      .map(r => r[key])
+      .filter(v => isFinite(v))
+      .sort((a,b) => a-b);
+
+    if (!vals.length) return null;
+
+    const n = vals.length;
+    const q1 = vals[Math.floor(n*0.25)];
+    const q2 = vals[Math.floor(n*0.5)]; // mediana
+    const q3 = vals[Math.floor(n*0.75)];
+    const iqr = q3 - q1;
+    const whiskerLo = Math.max(vals[0], q1 - 1.5*iqr);
+    const whiskerHi = Math.min(vals[n-1], q3 + 1.5*iqr);
+    const outliers = vals.filter(v => v < whiskerLo || v > whiskerHi);
+    const mean = vals.reduce((a,b)=>a+b)/n;
+
+    return { name: g.name, vals, n, q1, q2, q3, whiskerLo, whiskerHi, outliers, mean,
+             color: colorPalette[gi % colorPalette.length] };
+  }).filter(Boolean);
+
+  // Plugin manual para desenhar boxplots
+  const boxplotPlugin = {
+    id: 'boxplotDraw',
+    afterDatasetsDraw(chart) {
+      const {ctx, scales:{x,y}} = chart;
+      groupStats.forEach((gs, i) => {
+        const cx = x.getPixelForValue(i);
+        const bw = Math.min(60, x.width / (groupStats.length * 2.5));
+
+        const yq1 = y.getPixelForValue(gs.q1);
+        const yq2 = y.getPixelForValue(gs.q2);
+        const yq3 = y.getPixelForValue(gs.q3);
+        const yWLo = y.getPixelForValue(gs.whiskerLo);
+        const yWHi = y.getPixelForValue(gs.whiskerHi);
+        const yMean = y.getPixelForValue(gs.mean);
+
+        ctx.save();
+
+        // Caixa IQR
+        ctx.fillStyle = gs.color + '44';
+        ctx.strokeStyle = gs.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx-bw/2, yq3, bw, yq1-yq3, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Mediana (linha grossa)
+        ctx.strokeStyle = gs.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx-bw/2, yq2);
+        ctx.lineTo(cx+bw/2, yq2);
+        ctx.stroke();
+
+        // Média (X ou triângulo)
+        ctx.fillStyle = gs.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx-5, yMean-5); ctx.lineTo(cx+5, yMean+5);
+        ctx.moveTo(cx+5, yMean-5); ctx.lineTo(cx-5, yMean+5);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.strokeStyle = gs.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Whiskers
+        ctx.strokeStyle = gs.color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4,3]);
+        ctx.beginPath();
+        ctx.moveTo(cx, yq1); ctx.lineTo(cx, yWLo);
+        ctx.moveTo(cx, yq3); ctx.lineTo(cx, yWHi);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Caps dos whiskers
+        ctx.beginPath();
+        ctx.moveTo(cx-bw/4, yWLo); ctx.lineTo(cx+bw/4, yWLo);
+        ctx.moveTo(cx-bw/4, yWHi); ctx.lineTo(cx+bw/4, yWHi);
+        ctx.stroke();
+
+        // Outliers
+        gs.outliers.forEach(ov => {
+          const yOv = y.getPixelForValue(ov);
+          ctx.beginPath();
+          ctx.arc(cx + (Math.random()-0.5)*bw*0.4, yOv, 4, 0, 2*Math.PI);
+          ctx.fillStyle = '#e74c3ccc';
+          ctx.fill();
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+
+        ctx.restore();
+      });
+    }
+  };
+
+  // Pontos individuais (jitter leve)
+  const datasets = groupStats.map((gs, i) => ({
+    label: gs.name,
+    data: gs.vals.map((v, vi) => ({
+      x: i + (vi % 2 === 0 ? -0.12 : 0.12) * (0.3 + (vi*0.07)%0.3),
+      y: v
+    })),
+    backgroundColor: gs.color + '66',
+    borderColor: gs.color,
+    borderWidth: 1,
+    pointRadius: 5,
+    type: 'scatter',
+  }));
+
+  const isMobile = window.innerWidth < 700;
+
+  state.mainCharts['boxplot'] = new Chart(canvas, {
+    type: 'scatter',
+    data: { datasets },
+    plugins: [boxplotPlugin],
+    options: {
+      animation: false,
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: `Boxplot — ${Mlabel} por grupo (mg m⁻² dia⁻¹)`,
+          font: { size: isMobile ? 11 : 13 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw.y.toFixed(3)} mg/m²/d`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: -0.6,
+          max: groupStats.length - 0.4,
+          ticks: {
+            callback: v => { const i=Math.round(v); return Math.abs(v-i)<0.1&&i>=0&&i<groupStats.length?groupStats[i].name:''; },
+            stepSize: 1, autoSkip: false,
+            font: { size: isMobile ? 9 : 11 }
+          },
+          title: { display: true, text: 'Grupo', font:{size:isMobile?10:12} },
+          grid: { display: false }
+        },
+        y: {
+          title: { display: true, text: `mg ${Mlabel} m⁻² dia⁻¹`, font:{size:isMobile?10:12} },
+          ticks: { font:{size:isMobile?9:11} }
+        }
+      }
+    }
+  });
+
+  // Legenda
+  const legEl = document.getElementById('boxplot-legend');
+  legEl.innerHTML = groupStats.map(gs =>
+    `<div style="display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:700;">
+      <span style="width:12px;height:12px;border-radius:3px;background:${gs.color};display:inline-block;"></span>
+      ${gs.name} (n=${gs.n})
+    </div>`
+  ).join('');
+
+  // Legenda da leitura
+  document.getElementById('boxplot-stats').innerHTML =
+    '<strong>Leitura:</strong> Caixa = Q1–Q3 (IQR) &nbsp;|&nbsp; Linha grossa = Mediana &nbsp;|&nbsp; ✕ = Média &nbsp;|&nbsp; Barras = whiskers 1.5×IQR &nbsp;|&nbsp; ● Vermelhos = outliers';
+}
+
+// ================================================================
+// EXPORTAR TABELA RESUMO
+// ================================================================
+function exportSummaryExcel() {
+  if (typeof XLSX==='undefined') { alert('Aguarde o SheetJS.'); return; }
+  const treatments = [...new Set(state.results.map(r=>r.treatment))];
+  const h = ['Tratamento','n','CH4_media','CH4_DP','CH4_min','CH4_max','CO2_media','CO2_DP','CO2_min','CO2_max'];
+  const rows = treatments.map(t => {
+    const r = state.results.filter(x=>x.treatment===t);
+    const ch4 = r.map(x=>x.flux_ch4_day).filter(v=>isFinite(v));
+    const co2 = r.map(x=>x.flux_co2_day).filter(v=>isFinite(v));
+    const m = a=>a.length?a.reduce((x,y)=>x+y)/a.length:null;
+    const sd = a=>a.length>1?stdDev(a):null;
+    return [t,r.length,m(ch4),sd(ch4),ch4.length?Math.min(...ch4):null,ch4.length?Math.max(...ch4):null,
+            m(co2),sd(co2),co2.length?Math.min(...co2):null,co2.length?Math.max(...co2):null];
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([h,...rows]), 'Resumo por tratamento');
+  XLSX.writeFile(wb, 'resumo_por_tratamento.xlsx');
+}
+
+function exportSummaryCSV() {
+  const treatments = [...new Set(state.results.map(r=>r.treatment))];
+  const h = ['Tratamento','n','CH4_media','CH4_DP','CH4_min','CH4_max','CO2_media','CO2_DP','CO2_min','CO2_max'];
+  const rows = treatments.map(t => {
+    const r = state.results.filter(x=>x.treatment===t);
+    const ch4 = r.map(x=>x.flux_ch4_day).filter(v=>isFinite(v));
+    const co2 = r.map(x=>x.flux_co2_day).filter(v=>isFinite(v));
+    const m = a=>a.length?a.reduce((x,y)=>x+y)/a.length:null;
+    const sd = a=>a.length>1?stdDev(a):null;
+    const fmt = v=>v!==null&&isFinite(v)?v.toFixed(4):'';
+    return [t,r.length,fmt(m(ch4)),fmt(sd(ch4)),fmt(ch4.length?Math.min(...ch4):null),fmt(ch4.length?Math.max(...ch4):null),
+            fmt(m(co2)),fmt(sd(co2)),fmt(co2.length?Math.min(...co2):null),fmt(co2.length?Math.max(...co2):null)];
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
+  a.download = 'resumo_por_tratamento.csv';
+  a.click();
 }
 
 // Drag and drop
