@@ -455,9 +455,28 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 .curve-stats .stat-item { display: flex; justify-content: space-between; }
 .curve-stats .stat-lbl { color: var(--text-mid); }
 .curve-stats .stat-val-s { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--green-dark); }
-.curve-stats .stat-val-s.good { color: #1a8c48; background:#d4f4e2; padding:1px 5px; border-radius:4px; }
-.curve-stats .stat-val-s.warn { color: #9c6800; background:#fff0cc; padding:1px 5px; border-radius:4px; }
-.curve-stats .stat-val-s.bad  { color: #c0392b; background:#fde8e8; padding:1px 5px; border-radius:4px; }
+/* Classes de cor R² — funcionam em qualquer contexto */
+.stat-val-s.good {
+  font-family: 'DM Mono', monospace; font-weight: 700;
+  color: #1a8c48 !important;
+  background: #d4f4e2 !important;
+  padding: 2px 6px; border-radius: 5px;
+  display: inline-block;
+}
+.stat-val-s.warn {
+  font-family: 'DM Mono', monospace; font-weight: 700;
+  color: #9c6800 !important;
+  background: #fff0cc !important;
+  padding: 2px 6px; border-radius: 5px;
+  display: inline-block;
+}
+.stat-val-s.bad {
+  font-family: 'DM Mono', monospace; font-weight: 700;
+  color: #c0392b !important;
+  background: #fde8e8 !important;
+  padding: 2px 6px; border-radius: 5px;
+  display: inline-block;
+}
 
 
 /* ---- RESULTS ---- */
@@ -662,6 +681,15 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   #topbar nav button span.nav-label { display: none; }
   .results-grid { grid-template-columns: 1fr 1fr; }
   .stat-card .stat-val { font-size: 1.2rem; }
+}
+
+/* R² stats — font-size fixo por CSS para não ser perdido ao trocar classe */
+[id^="cs-ch4r-"], [id^="cs-co2r-"], [id^="cs-h2or-"] {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  font-family: 'DM Mono', monospace !important;
+  min-width: 44px;
+  display: inline-block;
 }
 
 /* Boxplot drag & drop */
@@ -2079,7 +2107,12 @@ function updateCurveStats(idx) {
   const r2Class = r2 => r2 >= 0.9 ? 'good' : r2 >= 0.8 ? 'warn' : 'bad';
   const set = (id, val, cls='') => {
     const el = document.getElementById(id);
-    if (el) { el.textContent = val; if (cls) el.className = 'stat-val-s ' + cls; }
+    if (el) {
+      el.textContent = val;
+      // Preserva classes base mas atualiza a classe de cor
+      el.classList.remove('good','warn','bad');
+      if (cls) el.classList.add(cls);
+    }
   };
 
   set(`cs-ch4s-${idx}`, (fit_ch4.slope*60).toFixed(4)+' ppm/min');
