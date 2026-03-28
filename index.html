@@ -455,9 +455,9 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 .curve-stats .stat-item { display: flex; justify-content: space-between; }
 .curve-stats .stat-lbl { color: var(--text-mid); }
 .curve-stats .stat-val-s { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--green-dark); }
-.curve-stats .stat-val-s.good { color: #2d9e5f; }
-.curve-stats .stat-val-s.warn { color: #f0a500; }
-.curve-stats .stat-val-s.bad  { color: #e74c3c; }
+.curve-stats .stat-val-s.good { color: #1a8c48; background:#d4f4e2; padding:1px 5px; border-radius:4px; }
+.curve-stats .stat-val-s.warn { color: #9c6800; background:#fff0cc; padding:1px 5px; border-radius:4px; }
+.curve-stats .stat-val-s.bad  { color: #c0392b; background:#fde8e8; padding:1px 5px; border-radius:4px; }
 
 
 /* ---- RESULTS ---- */
@@ -1639,6 +1639,7 @@ function buildCurves() {
       fit_ch4, fit_co2, fit_h2o,
       flux_ch4, flux_co2,
       status: 'accepted',
+      gasStatus: { ch4: 'accepted', co2: 'accepted', h2o: 'accepted' },
       applyCorr
     });
   });
@@ -1753,7 +1754,7 @@ function renderCurves() {
   state.curveCharts = {};
 
   state.curves.forEach((c, idx) => {
-    // Inicializar janelas independentes por gás
+    // Inicializar janelas e status independentes por gás
     if (c.rows.length >= 5 && c.winSel === undefined) {
       const maxT = c.times_s[c.times_s.length - 1];
       c.winSel = {
@@ -1761,6 +1762,9 @@ function renderCurves() {
         co2: { lo: 0, hi: maxT },
         h2o: { lo: 0, hi: maxT },
       };
+    }
+    if (c.rows.length >= 5 && c.gasStatus === undefined) {
+      c.gasStatus = { ch4: 'accepted', co2: 'accepted', h2o: 'accepted' };
     }
 
     const div = document.createElement('div');
@@ -1864,7 +1868,15 @@ function renderCurves() {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0;">
 
           <div style="background:#f0faf4;border-radius:8px;padding:8px 10px;border-top:3px solid #2d6a4f;">
-            <div style="font-size:0.7rem;font-weight:700;color:#2d6a4f;margin-bottom:4px;">CH₄</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:0.7rem;font-weight:700;color:#2d6a4f;">CH₄</span>
+            <span id="gas-status-ch4-${idx}">
+              <button onclick="setGasStatus(${idx},'ch4','accepted')" title="Aceitar CH₄"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'ch4','rejected')" title="Rejeitar CH₄"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+            </span>
+          </div>
             <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
             <div class="stat-val-s" id="cs-ch4s-${idx}" style="font-size:0.78rem;">—</div>
             <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
@@ -1875,7 +1887,15 @@ function renderCurves() {
           </div>
 
           <div style="background:#fff8f0;border-radius:8px;padding:8px 10px;border-top:3px solid #f4a261;">
-            <div style="font-size:0.7rem;font-weight:700;color:#a05010;margin-bottom:4px;">CO₂</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:0.7rem;font-weight:700;color:#a05010;">CO₂</span>
+            <span id="gas-status-co2-${idx}">
+              <button onclick="setGasStatus(${idx},'co2','accepted')" title="Aceitar CO₂"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'co2','rejected')" title="Rejeitar CO₂"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+            </span>
+          </div>
             <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
             <div class="stat-val-s" id="cs-co2s-${idx}" style="font-size:0.78rem;">—</div>
             <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
@@ -1886,7 +1906,15 @@ function renderCurves() {
           </div>
 
           <div style="background:#f0f6ff;border-radius:8px;padding:8px 10px;border-top:3px solid #3498db;">
-            <div style="font-size:0.7rem;font-weight:700;color:#1a5c8a;margin-bottom:4px;">H₂O</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:0.7rem;font-weight:700;color:#1a5c8a;">H₂O</span>
+            <span id="gas-status-h2o-${idx}">
+              <button onclick="setGasStatus(${idx},'h2o','accepted')" title="Aceitar H₂O"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'h2o','rejected')" title="Rejeitar H₂O"
+                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+            </span>
+          </div>
             <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
             <div class="stat-val-s" id="cs-h2os-${idx}" style="font-size:0.78rem;">—</div>
             <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
@@ -1898,10 +1926,13 @@ function renderCurves() {
 
         </div>
 
-        <div class="curve-actions">
-          <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}" onclick="setCurveStatus(${idx},'accepted')">✅ Aceitar</button>
-          <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}" onclick="setCurveStatus(${idx},'rejected')">❌ Rejeitar</button>
-          <button class="btn btn-sm btn-ghost" onclick="resetSlider(${idx})" title="Resetar todos">↺ Tudo</button>
+        <div class="curve-actions" style="flex-wrap:wrap;gap:6px;">
+          <!-- Aceitar/Rejeitar TODA a medição -->
+          <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}"
+            onclick="setCurveStatus(${idx},'accepted')" title="Aceitar medição inteira">✅ Tudo</button>
+          <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}"
+            onclick="setCurveStatus(${idx},'rejected')" title="Rejeitar medição inteira">❌ Tudo</button>
+          <button class="btn btn-sm btn-ghost" onclick="resetSlider(${idx})" title="Resetar janelas">↺</button>
         </div>`;
     }
 
@@ -1912,6 +1943,7 @@ function renderCurves() {
         drawCurveChart(idx, c);
         ['ch4','co2','h2o'].forEach(g => updateSliderTrackGas(idx, g));
         updateCurveStats(idx);
+        updateGasStatusUI(idx);
       }, 60 + idx * 20);
     }
   });
@@ -2044,7 +2076,7 @@ function updateCurveStats(idx) {
     n_pts_co2: dCO2.t.length,
   };
 
-  const r2Class = r2 => r2 >= 0.8 ? 'good' : r2 >= 0.5 ? 'warn' : 'bad';
+  const r2Class = r2 => r2 >= 0.9 ? 'good' : r2 >= 0.8 ? 'warn' : 'bad';
   const set = (id, val, cls='') => {
     const el = document.getElementById(id);
     if (el) { el.textContent = val; if (cls) el.className = 'stat-val-s ' + cls; }
@@ -2167,13 +2199,58 @@ function showGas(gas) {
 }
 
 function setCurveStatus(idx, status) {
-  state.curves[idx].status = status;
+  const c = state.curves[idx];
+  c.status = status;
+  // Quando a medição toda é aceita/rejeitada, propaga para todos os gases
+  if (c.gasStatus) {
+    c.gasStatus.ch4 = status;
+    c.gasStatus.co2 = status;
+    c.gasStatus.h2o = status;
+  }
   const card = document.getElementById(`curve-card-${idx}`);
-  card.className = `curve-card ${status}`;
+  if (card) card.className = `curve-card ${status}`;
+  updateGasStatusUI(idx);
   computeResults();
 }
 
-function acceptAll() { state.curves.forEach((_,i) => setCurveStatus(i,'accepted')); }
+function setGasStatus(idx, gas, status) {
+  const c = state.curves[idx];
+  if (!c || !c.gasStatus) return;
+  c.gasStatus[gas] = status;
+
+  // Se todos os gases forem rejected → a medição é rejected
+  // Se qualquer gás for accepted → a medição é accepted (aparece nos resultados)
+  const allRejected = c.gasStatus.ch4==='rejected' && c.gasStatus.co2==='rejected' && c.gasStatus.h2o==='rejected';
+  c.status = allRejected ? 'rejected' : 'accepted';
+  const card = document.getElementById(`curve-card-${idx}`);
+  if (card) card.className = `curve-card ${c.status}`;
+  updateGasStatusUI(idx);
+  computeResults();
+}
+
+function updateGasStatusUI(idx) {
+  const c = state.curves[idx];
+  if (!c || !c.gasStatus) return;
+  ['ch4','co2','h2o'].forEach(gas => {
+    const el = document.getElementById(`gas-status-${gas}-${idx}`);
+    if (!el) return;
+    const st = c.gasStatus[gas];
+    // Highlight do botão ativo
+    const btns = el.querySelectorAll('button');
+    btns[0].style.opacity = st === 'accepted' ? '1' : '0.3'; // ✅
+    btns[1].style.opacity = st === 'rejected' ? '1' : '0.3'; // ❌
+    // Fundo do box de stats
+    const boxMap = {ch4:'#f0faf4', co2:'#fff8f0', h2o:'#f0f6ff'};
+    const rejectedBg = '#fef0f0';
+    const parent = el.closest('div[style*="border-radius"]');
+    if (parent) parent.style.background = st === 'rejected' ? rejectedBg : boxMap[gas];
+  });
+}
+
+function acceptAll() {
+  state.curves.forEach((_,i) => setCurveStatus(i,'accepted'));
+  state.curves.forEach((_,i) => updateGasStatusUI(i));
+}
 
 function applyAndGoResults() {
   // Para cada curva aceita sem adj, inicializa adj com o fit completo
@@ -2214,11 +2291,13 @@ function computeResults() {
   state.results = state.curves.filter(c=>c.status==='accepted'&&c.rows.length>=5).map(c=>{
     // Usa stats ajustadas pelo slider se disponível, senão usa o fit original
     const adj = c.adj;
+    const gs = c.gasStatus || {ch4:'accepted',co2:'accepted',h2o:'accepted'};
+    // Se o gás foi rejeitado individualmente, flux = null
     const fit_ch4 = adj ? adj.fit_ch4 : c.fit_ch4;
     const fit_co2 = adj ? adj.fit_co2 : c.fit_co2;
     const mean_h2o = adj ? adj.mean_h2o : c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
-    const fch4 = adj ? adj.fch4 : calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o);
-    const fco2 = adj ? adj.fco2 : calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o);
+    const fch4 = gs.ch4==='rejected' ? null : (adj ? adj.fch4 : calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o));
+    const fco2 = gs.co2==='rejected' ? null : (adj ? adj.fco2 : calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o));
     const winSel = adj ? adj.winSel : {
       ch4:{lo:0,hi:Math.round(c.times_s[c.times_s.length-1])},
       co2:{lo:0,hi:Math.round(c.times_s[c.times_s.length-1])},
@@ -2227,10 +2306,13 @@ function computeResults() {
     const n_pts_used = adj ? adj.n_pts : c.rows.length;
     return {num:c.win.num,date:c.win.date,start:c.win.start,stop:c.win.stop,
       treatment:c.win.treatment||'N/A',
-      flux_ch4_day:fch4.mg_m2_day,flux_co2_day:fco2.mg_m2_day,
-      flux_ch4_h:fch4.mg_m2_h,flux_co2_h:fco2.mg_m2_h,
-      r2_ch4:fit_ch4.r2,r2_co2:fit_co2.r2,
-      slope_ch4:fit_ch4.slope,slope_co2:fit_co2.slope,
+      flux_ch4_day:fch4?fch4.mg_m2_day:null, flux_co2_day:fco2?fco2.mg_m2_day:null,
+      flux_ch4_h:fch4?fch4.mg_m2_h:null,   flux_co2_h:fco2?fco2.mg_m2_h:null,
+      r2_ch4:gs.ch4==='rejected'?null:fit_ch4.r2,
+      r2_co2:gs.co2==='rejected'?null:fit_co2.r2,
+      slope_ch4:gs.ch4==='rejected'?null:fit_ch4.slope,
+      slope_co2:gs.co2==='rejected'?null:fit_co2.slope,
+      gas_ch4_status:gs.ch4, gas_co2_status:gs.co2,
       mean_h2o,n_pts:c.rows.length,n_pts_used,
       win_ch4_lo:winSel.ch4?.lo??0, win_ch4_hi:winSel.ch4?.hi??0,
       win_co2_lo:winSel.co2?.lo??0, win_co2_hi:winSel.co2?.hi??0,
