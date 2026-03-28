@@ -10,6 +10,46 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc,
+         updateDoc, deleteDoc, getDocs, query, where, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+// ── Firebase config (Carbon-Flux project) ──
+const firebaseConfig = {
+  apiKey:            "AIzaSyBWcGAa3CWurSiDs5udEtESGwCGGnYTX5Y",
+  authDomain:        "brasa-pantanal.firebaseapp.com",
+  projectId:         "brasa-pantanal",
+  storageBucket:     "brasa-pantanal.firebasestorage.app",
+  messagingSenderId: "876718329822",
+  appId:             "1:876718329822:web:e0e0254ee909a933dad74f"
+};
+
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
+
+// Expor para uso global
+window._fb = { auth, db, storage,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged,
+  doc, setDoc, getDoc, collection, addDoc,
+  updateDoc, deleteDoc, getDocs, query, where, serverTimestamp,
+  ref, uploadBytes, getDownloadURL, deleteObject, listAll };
+
+// Listener de auth
+onAuthStateChanged(auth, user => {
+  window._fbUser = user;
+  if (typeof window.onFbAuthChange === 'function') window.onFbAuthChange(user);
+});
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
 
@@ -692,6 +732,67 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   display: inline-block;
 }
 
+/* ── Cloud / Auth ── */
+#cloud-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55); z-index: 999;
+  align-items: center; justify-content: center;
+}
+#cloud-modal-overlay.open { display: flex; }
+#cloud-modal {
+  background: #fff; border-radius: 16px; padding: 32px 28px;
+  width: min(420px, 95vw); box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+  position: relative;
+}
+#cloud-modal h2 { font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--green-dark); margin-bottom:4px; }
+#cloud-modal .auth-sub { font-size:0.88rem; color:var(--text-mid); margin-bottom:20px; }
+#cloud-modal .auth-input {
+  width:100%; border:1.5px solid var(--gray-mid); border-radius:8px;
+  padding:11px 14px; font-size:0.96rem; margin-bottom:12px;
+  font-family:'Lato',sans-serif; background:var(--gray-light);
+}
+#cloud-modal .auth-input:focus { outline:none; border-color:var(--green-mid); background:#fff; }
+#cloud-modal .auth-err { color:#c0392b; font-size:0.85rem; margin-bottom:10px; min-height:18px; }
+#cloud-modal .auth-toggle { font-size:0.85rem; color:var(--text-mid); text-align:center; margin-top:12px; }
+#cloud-modal .auth-toggle a { color:var(--green-mid); cursor:pointer; font-weight:700; }
+
+.project-card {
+  background: var(--gray-light); border-radius:10px; padding:14px 16px;
+  margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  border: 1.5px solid transparent; transition: border 0.15s;
+}
+.project-card:hover { border-color: var(--green-mid); }
+.project-card .proj-icon { font-size:1.6rem; flex-shrink:0; }
+.project-card .proj-info { flex:1; min-width:0; }
+.project-card .proj-name { font-weight:700; color:var(--green-dark); font-size:0.95rem; }
+.project-card .proj-code {
+  font-family:'DM Mono',monospace; font-size:0.78rem;
+  color:var(--text-mid); margin-top:2px;
+}
+.project-card .proj-date { font-size:0.75rem; color:#aaa; margin-top:2px; }
+.code-box {
+  background:var(--green-dark); color:var(--green-light);
+  font-family:'DM Mono',monospace; font-size:1.1rem; font-weight:700;
+  letter-spacing:2px; padding:12px 20px; border-radius:8px;
+  text-align:center; margin:12px 0; user-select:all;
+  cursor:copy; position:relative;
+}
+.code-box:active { opacity:0.8; }
+.cloud-file-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; background:#fff; border-radius:8px;
+  border:1px solid var(--gray-light); margin-bottom:6px;
+}
+.cloud-file-item .cf-name { flex:1; font-size:0.88rem; font-weight:700; color:var(--green-dark); }
+.cloud-file-item .cf-size { font-size:0.78rem; color:var(--text-mid); }
+.cloud-file-item .cf-date { font-size:0.75rem; color:#bbb; }
+.perm-badge {
+  font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;
+}
+.perm-owner { background:#d4f4e2; color:#1a8c48; }
+.perm-shared { background:#fff0cc; color:#9c6800; }
+
+/* Boxplot drag & drop */
 /* Boxplot drag & drop */
 .bp-treat-chip {
   display: inline-flex; align-items: center; gap: 4px;
@@ -745,9 +846,16 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   <nav>
     <button class="active" onclick="showSection('project')">🔬 <span class="nav-label">Project</span></button>
     <button onclick="showSection('upload')">📂 <span class="nav-label">Data</span></button>
+    <button onclick="showSection('cloud')">☁️ <span class="nav-label">Cloud</span></button>
     <button onclick="showSection('curves')">📈 <span class="nav-label">Curves</span></button>
     <button onclick="showSection('results')">📊 <span class="nav-label">Results</span></button>
   </nav>
+  <div id="auth-btn" onclick="openAuthModal()"
+    style="margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:6px;
+           background:rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;flex-shrink:0;">
+    <span id="auth-icon">👤</span>
+    <span id="auth-label" style="font-size:0.75rem;color:#d8f3dc;white-space:nowrap;">Entrar</span>
+  </div>
   <div class="badge" id="status-badge">Instrumento: LGR</div>
 </div>
 
@@ -961,6 +1069,193 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   <div id="data-preview" style="display:none;" class="card">
     <div class="card-title">Data Preview</div>
     <div id="preview-content"></div>
+  </div>
+</div>
+
+<!-- ============ SECTION: CLOUD ============ -->
+<div class="section" id="section-cloud">
+  <div class="section-title">☁️ Cloud — Projetos & Dados</div>
+  <div class="section-sub">Salve seus projetos na nuvem, compartilhe com colaboradores e faça upload dos arquivos TXT e Times diretamente do sistema.</div>
+
+  <!-- Estado: não logado -->
+  <div id="cloud-notlogged" class="card">
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:3rem;margin-bottom:12px;">🔐</div>
+      <div class="card-title" style="margin-bottom:6px;">Entre para usar o Cloud</div>
+      <p style="color:var(--text-mid);font-size:0.92rem;margin-bottom:20px;">
+        Crie uma conta ou entre para salvar projetos, fazer upload de arquivos e compartilhar com sua equipe.
+      </p>
+      <button class="btn btn-primary" onclick="openAuthModal('login')">Entrar / Criar conta</button>
+    </div>
+  </div>
+
+  <!-- Estado: logado -->
+  <div id="cloud-logged" style="display:none;">
+
+    <!-- Header do usuário -->
+    <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:2rem;">👤</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;color:var(--green-dark);" id="cloud-user-email">—</div>
+          <div style="font-size:0.82rem;color:var(--text-mid);">Logado no Carbon-Flux Cloud</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="doSignOut()">Sair</button>
+      </div>
+    </div>
+
+    <!-- Tabs Cloud -->
+    <div class="tabs" style="margin-bottom:20px;">
+      <button class="tab-btn active" onclick="showCloudTab('ctab-meus')">📁 Meus Projetos</button>
+      <button class="tab-btn" onclick="showCloudTab('ctab-entrar')">🔑 Entrar com Código</button>
+      <button class="tab-btn" onclick="showCloudTab('ctab-novo')">➕ Novo Projeto</button>
+    </div>
+
+    <!-- TAB: Meus Projetos -->
+    <div id="ctab-meus" class="ctab-pane">
+      <div id="cloud-projects-list">
+        <div class="alert alert-info">Carregando projetos...</div>
+      </div>
+    </div>
+
+    <!-- TAB: Entrar com código -->
+    <div id="ctab-entrar" class="ctab-pane" style="display:none;">
+      <div class="card">
+        <div class="card-title">🔑 Acessar projeto pelo código</div>
+        <div class="card-sub">Recebeu um código de outro usuário? Insira abaixo para acessar o projeto compartilhado.</div>
+        <div class="sci-form" style="margin-top:12px;">
+          <div class="form-group">
+            <label>Código do projeto (6 caracteres)</label>
+            <input type="text" id="join-code-input" placeholder="ex: A3F7KL"
+              style="text-transform:uppercase;letter-spacing:3px;font-family:'DM Mono',monospace;font-size:1.1rem;max-width:200px;"
+              maxlength="6" oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <button class="btn btn-primary" onclick="joinProjectByCode()" style="margin-top:8px;">
+            🔍 Buscar projeto
+          </button>
+          <div id="join-result" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Novo Projeto -->
+    <div id="ctab-novo" class="ctab-pane" style="display:none;">
+      <div class="card">
+        <div class="card-title">➕ Criar novo projeto</div>
+        <div class="card-sub">O sistema gera um código único de 6 caracteres para você compartilhar com sua equipe.</div>
+        <div class="sci-form" style="margin-top:12px;">
+          <div class="form-group">
+            <label>Nome do projeto</label>
+            <input type="text" id="new-proj-name" placeholder="ex: BRASA 2026 — Mesocosmo CH₄" style="max-width:420px;">
+          </div>
+          <div class="form-group">
+            <label>Descrição (opcional)</label>
+            <textarea id="new-proj-desc" rows="2" placeholder="ex: Experimento com cinzas, Pantanal Norte, março 2026" style="max-width:420px;"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="createCloudProject()" style="margin-top:4px;">
+            ✨ Criar projeto
+          </button>
+          <div id="new-proj-result" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAINEL DE PROJETO ABERTO -->
+    <div id="cloud-project-panel" style="display:none;">
+      <div class="card" style="border:2px solid var(--green-mid);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <div>
+            <div class="card-title" id="open-proj-name">—</div>
+            <div style="font-size:0.82rem;color:var(--text-mid);" id="open-proj-desc">—</div>
+            <div style="margin-top:6px;">
+              <span class="perm-badge" id="open-proj-perm">—</span>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.78rem;color:var(--text-mid);margin-bottom:4px;">Código do projeto:</div>
+            <div class="code-box" id="open-proj-code" onclick="copyCode(this)" title="Clique para copiar">——</div>
+            <div style="font-size:0.72rem;color:#aaa;">Clique para copiar e compartilhar</div>
+          </div>
+        </div>
+
+        <!-- Uploads de arquivos -->
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:700;color:var(--green-dark);font-size:0.9rem;margin-bottom:10px;">
+            📂 Arquivos do projeto
+          </div>
+
+          <!-- Upload TXT -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;" id="proj-upload-grid">
+            <div style="border:2px dashed var(--gray-mid);border-radius:10px;padding:16px;text-align:center;background:var(--gray-light);position:relative;cursor:pointer;"
+              id="cloud-zone-txt" onclick="document.getElementById('cloud-input-txt').click()">
+              <input type="file" id="cloud-input-txt" accept=".txt" style="display:none" multiple onchange="cloudUploadFiles(event,'txt')">
+              <div style="font-size:1.8rem;">🗂️</div>
+              <div style="font-size:0.82rem;font-weight:700;color:var(--green-dark);">Upload TXT</div>
+              <div style="font-size:0.72rem;color:var(--text-mid);">Arquivos do analisador</div>
+            </div>
+            <div style="border:2px dashed var(--gray-mid);border-radius:10px;padding:16px;text-align:center;background:var(--gray-light);position:relative;cursor:pointer;"
+              id="cloud-zone-xlsx" onclick="document.getElementById('cloud-input-xlsx').click()">
+              <input type="file" id="cloud-input-xlsx" accept=".xlsx,.csv" style="display:none" multiple onchange="cloudUploadFiles(event,'xlsx')">
+              <div style="font-size:1.8rem;">📊</div>
+              <div style="font-size:0.82rem;font-weight:700;color:var(--green-dark);">Upload Times</div>
+              <div style="font-size:0.72rem;color:var(--text-mid);">Arquivos de horários (.xlsx/.csv)</div>
+            </div>
+          </div>
+
+          <!-- Lista de arquivos -->
+          <div id="cloud-files-list">
+            <div style="font-size:0.85rem;color:var(--text-mid);">Carregando arquivos...</div>
+          </div>
+        </div>
+
+        <!-- Resultados salvos -->
+        <div>
+          <div style="font-weight:700;color:var(--green-dark);font-size:0.9rem;margin-bottom:8px;">
+            📊 Resultados salvos
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <button class="btn btn-sm btn-primary" onclick="saveResultsToCloud()">💾 Salvar resultados atuais</button>
+            <button class="btn btn-sm btn-ghost"   onclick="loadResultsList()">🔄 Atualizar lista</button>
+          </div>
+          <div id="cloud-results-list">
+            <div style="font-size:0.85rem;color:var(--text-mid);">Nenhum resultado salvo ainda.</div>
+          </div>
+        </div>
+
+        <!-- Fechar painel -->
+        <div style="margin-top:16px;text-align:right;">
+          <button class="btn btn-ghost btn-sm" onclick="closeProjectPanel()">← Voltar para projetos</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /cloud-logged -->
+</div>
+
+<!-- MODAL DE AUTENTICAÇÃO -->
+<div id="cloud-modal-overlay">
+  <div id="cloud-modal">
+    <div id="auth-form-login">
+      <h2>Entrar no Carbon-Flux</h2>
+      <p class="auth-sub">Use seu e-mail e senha para acessar seus projetos na nuvem.</p>
+      <div class="auth-err" id="auth-err-login"></div>
+      <input class="auth-input" type="email"    id="auth-email-login"    placeholder="E-mail">
+      <input class="auth-input" type="password" id="auth-pass-login"     placeholder="Senha">
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Entrar</button>
+      <div class="auth-toggle">Não tem conta? <a onclick="switchAuthForm('register')">Criar conta</a></div>
+    </div>
+    <div id="auth-form-register" style="display:none;">
+      <h2>Criar conta</h2>
+      <p class="auth-sub">Crie sua conta gratuita para usar o Carbon-Flux Cloud.</p>
+      <div class="auth-err" id="auth-err-register"></div>
+      <input class="auth-input" type="email"    id="auth-email-reg"      placeholder="E-mail">
+      <input class="auth-input" type="password" id="auth-pass-reg"       placeholder="Senha (mínimo 6 caracteres)">
+      <input class="auth-input" type="password" id="auth-pass-reg2"      placeholder="Confirmar senha">
+      <button class="btn btn-primary" style="width:100%;" onclick="doRegister()">Criar conta</button>
+      <div class="auth-toggle">Já tem conta? <a onclick="switchAuthForm('login')">Entrar</a></div>
+    </div>
+    <button onclick="closeAuthModal()"
+      style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;">✕</button>
   </div>
 </div>
 
@@ -1191,8 +1486,9 @@ function showSection(id) {
   document.getElementById('section-'+id).classList.add('active');
   document.querySelectorAll('#topbar nav button').forEach(b => b.classList.remove('active'));
   const btns = document.querySelectorAll('#topbar nav button');
-  const map = {project:0, upload:1, curves:2, results:3};
-  btns[map[id]].classList.add('active');
+  const map = {project:0, upload:1, cloud:2, curves:3, results:4};
+  if (btns[map[id]]) btns[map[id]].classList.add('active');
+  if (id === 'cloud') initCloudSection();
 }
 
 function showTab(tabId) {
@@ -3087,6 +3383,437 @@ function exportSummaryCSV() {
     else { document.getElementById('input-xlsx').files = e.dataTransfer.files; handleXlsxUpload({target:{files:e.dataTransfer.files}}); }
   });
 });
+
+// ================================================================
+// CLOUD — AUTH + FIRESTORE + STORAGE
+// ================================================================
+
+// Estado do cloud
+const cloud = {
+  user: null,
+  project: null,  // { id, code, name, desc, role:'owner'|'shared' }
+};
+
+// Callback disparado pelo módulo Firebase quando auth muda
+window.onFbAuthChange = function(user) {
+  cloud.user = user;
+  updateAuthUI(user);
+  if (document.getElementById('section-cloud').classList.contains('active')) {
+    initCloudSection();
+  }
+};
+
+function fb() { return window._fb; }
+
+// ── Utils ──────────────────────────────────────────────────────
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function fmtBytes(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Auth UI ────────────────────────────────────────────────────
+function updateAuthUI(user) {
+  const icon  = document.getElementById('auth-icon');
+  const label = document.getElementById('auth-label');
+  if (user) {
+    if (icon)  icon.textContent  = '✅';
+    if (label) label.textContent = user.email.split('@')[0];
+    const el = document.getElementById('cloud-user-email');
+    if (el) el.textContent = user.email;
+    document.getElementById('cloud-notlogged').style.display = 'none';
+    document.getElementById('cloud-logged').style.display    = 'block';
+  } else {
+    if (icon)  icon.textContent  = '👤';
+    if (label) label.textContent = 'Entrar';
+    document.getElementById('cloud-notlogged').style.display = 'block';
+    document.getElementById('cloud-logged').style.display    = 'none';
+    closeProjectPanel();
+  }
+}
+
+function openAuthModal(mode) {
+  switchAuthForm(mode || 'login');
+  document.getElementById('cloud-modal-overlay').classList.add('open');
+}
+function closeAuthModal() {
+  document.getElementById('cloud-modal-overlay').classList.remove('open');
+}
+function switchAuthForm(mode) {
+  document.getElementById('auth-form-login').style.display    = mode==='login'    ? '' : 'none';
+  document.getElementById('auth-form-register').style.display = mode==='register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('auth-email-login').value.trim();
+  const pass  = document.getElementById('auth-pass-login').value;
+  const err   = document.getElementById('auth-err-login');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; return; }
+  try {
+    await fb().signInWithEmailAndPassword(fb().auth, email, pass);
+    closeAuthModal();
+    showSection('cloud');
+  } catch(e) {
+    err.textContent = e.code === 'auth/invalid-credential'
+      ? 'E-mail ou senha incorretos.'
+      : e.message;
+  }
+}
+
+async function doRegister() {
+  const email = document.getElementById('auth-email-reg').value.trim();
+  const pass  = document.getElementById('auth-pass-reg').value;
+  const pass2 = document.getElementById('auth-pass-reg2').value;
+  const err   = document.getElementById('auth-err-register');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Preencha todos os campos.'; return; }
+  if (pass !== pass2)  { err.textContent = 'As senhas não conferem.'; return; }
+  if (pass.length < 6) { err.textContent = 'Senha mínima de 6 caracteres.'; return; }
+  try {
+    await fb().createUserWithEmailAndPassword(fb().auth, email, pass);
+    closeAuthModal();
+    showSection('cloud');
+  } catch(e) {
+    err.textContent = e.code === 'auth/email-already-in-use'
+      ? 'E-mail já cadastrado. Faça login.'
+      : e.message;
+  }
+}
+
+async function doSignOut() {
+  await fb().signOut(fb().auth);
+  cloud.project = null;
+  updateAuthUI(null);
+}
+
+// ── Cloud section init ─────────────────────────────────────────
+function initCloudSection() {
+  if (!cloud.user) {
+    updateAuthUI(null);
+    return;
+  }
+  updateAuthUI(cloud.user);
+  loadMyProjects();
+}
+
+function showCloudTab(id) {
+  document.querySelectorAll('.ctab-pane').forEach(p => p.style.display='none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('#cloud-logged .tab-btn').forEach(b => b.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+  if (id === 'ctab-meus') loadMyProjects();
+}
+
+// ── Projetos ───────────────────────────────────────────────────
+async function createCloudProject() {
+  if (!cloud.user) { openAuthModal(); return; }
+  const name = document.getElementById('new-proj-name').value.trim();
+  const desc = document.getElementById('new-proj-desc').value.trim();
+  const res  = document.getElementById('new-proj-result');
+  if (!name) { res.innerHTML = '<span style="color:#c0392b;">Digite o nome do projeto.</span>'; return; }
+
+  res.innerHTML = '<span style="color:var(--text-mid);">Criando...</span>';
+
+  try {
+    let code, exists = true;
+    const {db, doc, getDoc, setDoc, serverTimestamp} = fb();
+    // Garantir código único
+    while (exists) {
+      code = genCode();
+      const snap = await getDoc(doc(db, 'projects', code));
+      exists = snap.exists();
+    }
+    await setDoc(doc(db, 'projects', code), {
+      code, name, desc,
+      owner: cloud.user.uid,
+      ownerEmail: cloud.user.email,
+      createdAt: serverTimestamp(),
+      members: [cloud.user.uid],
+    });
+    res.innerHTML = `
+      <div class="alert alert-info" style="margin-top:8px;">
+        ✅ Projeto criado! Código: <strong style="font-family:monospace;letter-spacing:2px;">${code}</strong><br>
+        <span style="font-size:0.82rem;">Compartilhe este código com sua equipe.</span>
+      </div>`;
+    document.getElementById('new-proj-name').value = '';
+    document.getElementById('new-proj-desc').value = '';
+    loadMyProjects();
+    showCloudTab('ctab-meus');
+  } catch(e) {
+    res.innerHTML = `<span style="color:#c0392b;">Erro: ${e.message}</span>`;
+  }
+}
+
+async function loadMyProjects() {
+  const el = document.getElementById('cloud-projects-list');
+  if (!cloud.user || !el) return;
+  el.innerHTML = '<div class="alert alert-info">Carregando...</div>';
+
+  try {
+    const {db, collection, getDocs, query, where} = fb();
+    const q = query(collection(db,'projects'), where('members','array-contains', cloud.user.uid));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      el.innerHTML = `<div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:2rem;margin-bottom:8px;">📭</div>
+        <p style="color:var(--text-mid);">Nenhum projeto ainda.<br>Crie um novo ou entre com um código.</p>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = '';
+    snap.forEach(d => {
+      const p = d.data();
+      const isOwner = p.owner === cloud.user.uid;
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.style.cursor = 'pointer';
+      card.innerHTML = `
+        <div class="proj-icon">🧪</div>
+        <div class="proj-info">
+          <div class="proj-name">${p.name}</div>
+          <div class="proj-code">Código: ${p.code}</div>
+          <div class="proj-date">${p.desc || ''}</div>
+        </div>
+        <span class="perm-badge ${isOwner?'perm-owner':'perm-shared'}">${isOwner?'Dono':'Compartilhado'}</span>`;
+      card.onclick = () => openProject(p.code, p.name, p.desc, isOwner?'owner':'shared');
+      el.appendChild(card);
+    });
+  } catch(e) {
+    el.innerHTML = `<span style="color:#c0392b;">Erro: ${e.message}</span>`;
+  }
+}
+
+async function joinProjectByCode() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  const res  = document.getElementById('join-result');
+  if (code.length !== 6) { res.innerHTML='<span style="color:#c0392b;">Código deve ter 6 caracteres.</span>'; return; }
+
+  res.innerHTML = '<span style="color:var(--text-mid);">Buscando...</span>';
+  try {
+    const {db, doc, getDoc, updateDoc} = fb();
+    const snap = await getDoc(doc(db,'projects', code));
+    if (!snap.exists()) { res.innerHTML='<span style="color:#c0392b;">Projeto não encontrado.</span>'; return; }
+
+    const p = snap.data();
+    // Adicionar usuário como membro se ainda não for
+    if (!p.members.includes(cloud.user.uid)) {
+      await updateDoc(doc(db,'projects', code), {
+        members: [...p.members, cloud.user.uid]
+      });
+    }
+    res.innerHTML = `<div class="alert alert-info">✅ Projeto encontrado: <strong>${p.name}</strong></div>`;
+    setTimeout(() => openProject(p.code, p.name, p.desc, p.owner===cloud.user.uid?'owner':'shared'), 800);
+  } catch(e) {
+    res.innerHTML = `<span style="color:#c0392b;">Erro: ${e.message}</span>`;
+  }
+}
+
+function openProject(code, name, desc, role) {
+  cloud.project = { code, name, desc, role };
+  document.getElementById('open-proj-name').textContent = name;
+  document.getElementById('open-proj-desc').textContent = desc || '';
+  document.getElementById('open-proj-code').textContent = code;
+  const pb = document.getElementById('open-proj-perm');
+  pb.textContent   = role==='owner' ? '👑 Você é o dono' : '🤝 Compartilhado';
+  pb.className = 'perm-badge ' + (role==='owner'?'perm-owner':'perm-shared');
+  document.getElementById('cloud-project-panel').style.display = 'block';
+  document.querySelectorAll('.ctab-pane').forEach(p=>p.style.display='none');
+  loadCloudFiles();
+  loadResultsList();
+}
+
+function closeProjectPanel() {
+  cloud.project = null;
+  document.getElementById('cloud-project-panel').style.display = 'none';
+  document.querySelectorAll('.ctab-pane').forEach((p,i)=>p.style.display=i===0?'block':'none');
+  loadMyProjects();
+}
+
+function copyCode(el) {
+  const code = el.textContent.trim();
+  navigator.clipboard.writeText(code).then(() => {
+    const orig = el.textContent;
+    el.textContent = '✅ Copiado!';
+    setTimeout(() => el.textContent = orig, 1200);
+  });
+}
+
+// ── Arquivos ───────────────────────────────────────────────────
+async function cloudUploadFiles(event, type) {
+  if (!cloud.project) return;
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  const {db, doc, setDoc, storage, ref, uploadBytes, getDownloadURL, serverTimestamp} = fb();
+  const code = cloud.project.code;
+  const listEl = document.getElementById('cloud-files-list');
+  listEl.innerHTML = `<div class="alert alert-info">⏳ Enviando ${files.length} arquivo(s)...</div>`;
+
+  for (const file of files) {
+    try {
+      const path = `projects/${code}/${type}/${file.name}`;
+      const storRef = ref(storage, path);
+      await uploadBytes(storRef, file);
+      const url = await getDownloadURL(storRef);
+      // Salvar metadata no Firestore
+      await setDoc(doc(db, 'projects', code, 'files', `${type}_${file.name}`), {
+        name: file.name, type, url, path,
+        size: file.size,
+        uploadedBy: cloud.user.email,
+        uploadedAt: serverTimestamp(),
+      });
+    } catch(e) {
+      console.error('Upload error:', e);
+    }
+  }
+  loadCloudFiles();
+}
+
+async function loadCloudFiles() {
+  if (!cloud.project) return;
+  const {db, collection, getDocs} = fb();
+  const code = cloud.project.code;
+  const listEl = document.getElementById('cloud-files-list');
+  listEl.innerHTML = '<div style="font-size:0.82rem;color:var(--text-mid);">Carregando...</div>';
+
+  try {
+    const snap = await getDocs(collection(db,'projects',code,'files'));
+    if (snap.empty) { listEl.innerHTML = '<div style="font-size:0.82rem;color:var(--text-mid);">Nenhum arquivo ainda.</div>'; return; }
+
+    listEl.innerHTML = '';
+    snap.forEach(d => {
+      const f = d.data();
+      const icon = f.type==='txt' ? '🗂️' : '📊';
+      const item = document.createElement('div');
+      item.className = 'cloud-file-item';
+      item.innerHTML = `
+        <span style="font-size:1.3rem;">${icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="cf-name">${f.name}</div>
+          <div class="cf-size">${fmtBytes(f.size)} &nbsp;·&nbsp; ${fmtDate(f.uploadedAt)} &nbsp;·&nbsp; ${f.uploadedBy||''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <a href="${f.url}" target="_blank" download="${f.name}"
+            class="btn btn-sm btn-ghost" style="padding:4px 10px;font-size:0.78rem;">⬇</a>
+          <button class="btn btn-sm" style="padding:4px 10px;font-size:0.78rem;background:#fde8e8;color:#c0392b;border:none;"
+            onclick="deleteCloudFile('${d.id}','${f.path}')">🗑️</button>
+        </div>`;
+      listEl.appendChild(item);
+    });
+  } catch(e) {
+    listEl.innerHTML = `<span style="color:#c0392b;">${e.message}</span>`;
+  }
+}
+
+async function deleteCloudFile(docId, path) {
+  if (!confirm('Deletar este arquivo do cloud?')) return;
+  const {db, doc, deleteDoc, storage, ref, deleteObject} = fb();
+  const code = cloud.project.code;
+  try {
+    await deleteObject(ref(storage, path));
+    await deleteDoc(doc(db,'projects',code,'files',docId));
+    loadCloudFiles();
+  } catch(e) { alert('Erro ao deletar: ' + e.message); }
+}
+
+// ── Resultados ─────────────────────────────────────────────────
+async function saveResultsToCloud() {
+  if (!cloud.project) { alert('Abra um projeto primeiro.'); return; }
+  if (!state.results || !state.results.length) { alert('Nenhum resultado calculado.'); return; }
+  const {db, doc, setDoc, serverTimestamp} = fb();
+  const code = cloud.project.code;
+  const ts = new Date().toISOString().replace(/[:.]/g,'-');
+  const id = `results_${ts}`;
+  try {
+    await setDoc(doc(db,'projects',code,'results',id), {
+      savedAt: serverTimestamp(),
+      savedBy: cloud.user.email,
+      n: state.results.length,
+      data: state.results,
+    });
+    alert('✅ Resultados salvos no cloud!');
+    loadResultsList();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function loadResultsList() {
+  if (!cloud.project) return;
+  const {db, collection, getDocs} = fb();
+  const code = cloud.project.code;
+  const el = document.getElementById('cloud-results-list');
+  el.innerHTML = '<div style="font-size:0.82rem;color:var(--text-mid);">Carregando...</div>';
+
+  try {
+    const snap = await getDocs(collection(db,'projects',code,'results'));
+    if (snap.empty) { el.innerHTML='<div style="font-size:0.82rem;color:var(--text-mid);">Nenhum resultado salvo.</div>'; return; }
+
+    el.innerHTML = '';
+    snap.forEach(d => {
+      const r = d.data();
+      const item = document.createElement('div');
+      item.className = 'cloud-file-item';
+      item.innerHTML = `
+        <span style="font-size:1.3rem;">📊</span>
+        <div style="flex:1;min-width:0;">
+          <div class="cf-name">${fmtDate(r.savedAt)} — ${r.n} medições</div>
+          <div class="cf-size">Salvo por ${r.savedBy||'—'}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-sm btn-primary" style="padding:4px 10px;font-size:0.78rem;"
+            onclick="loadCloudResults('${d.id}')">📥 Carregar</button>
+          <button class="btn btn-sm" style="padding:4px 10px;font-size:0.78rem;background:#fde8e8;color:#c0392b;border:none;"
+            onclick="deleteCloudResult('${d.id}')">🗑️</button>
+        </div>`;
+      el.appendChild(item);
+    });
+  } catch(e) {
+    el.innerHTML = `<span style="color:#c0392b;">${e.message}</span>`;
+  }
+}
+
+async function loadCloudResults(docId) {
+  const {db, doc, getDoc} = fb();
+  const code = cloud.project.code;
+  try {
+    const snap = await getDoc(doc(db,'projects',code,'results',docId));
+    if (!snap.exists()) { alert('Resultado não encontrado.'); return; }
+    state.results = snap.data().data;
+    updateResultsUI();
+    showSection('results');
+    alert('✅ Resultados carregados!');
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function deleteCloudResult(docId) {
+  if (!confirm('Deletar este resultado?')) return;
+  const {db, doc, deleteDoc} = fb();
+  try {
+    await deleteDoc(doc(db,'projects',cloud.project.code,'results',docId));
+    loadResultsList();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// Fechar modal clicando fora
+document.getElementById('cloud-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAuthModal();
+});
+
+// Tecla Enter nos inputs de auth
+document.getElementById('auth-pass-login').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('auth-pass-reg2').addEventListener('keydown',  e => { if(e.key==='Enter') doRegister(); });
 </script>
 </body>
 </html>
