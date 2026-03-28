@@ -1659,9 +1659,14 @@ function renderCurves() {
   state.curveCharts = {};
 
   state.curves.forEach((c, idx) => {
-    // Inicializar janela de seleção = tempo total da curva
+    // Inicializar janelas independentes por gás
     if (c.rows.length >= 5 && c.winSel === undefined) {
-      c.winSel = { lo: 0, hi: c.times_s[c.times_s.length - 1] };
+      const maxT = c.times_s[c.times_s.length - 1];
+      c.winSel = {
+        ch4: { lo: 0, hi: maxT },
+        co2: { lo: 0, hi: maxT },
+        h2o: { lo: 0, hi: maxT },
+      };
     }
 
     const div = document.createElement('div');
@@ -1693,39 +1698,116 @@ function renderCurves() {
           <canvas id="canvas-${idx}"></canvas>
         </div>
 
-        <!-- SLIDER DUPLO -->
+        <!-- SLIDERS INDEPENDENTES POR GÁS -->
         <div class="slider-wrap">
-          <label>🎚 Janela de regressão — arraste para ajustar</label>
-          <div class="dual-slider" id="dslider-${idx}">
-            <div class="slider-track"></div>
-            <div class="slider-range" id="srange-${idx}"></div>
-            <input type="range" id="slo-${idx}" min="0" max="${maxT}" value="0" step="1"
-              oninput="onSlider(${idx})">
-            <input type="range" id="shi-${idx}" min="0" max="${maxT}" value="${maxT}" step="1"
-              oninput="onSlider(${idx})">
+
+          <!-- CH4 -->
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#2d6a4f;display:inline-block;flex-shrink:0;"></span>
+              <label style="margin:0;color:#2d6a4f;">CH₄ — janela independente</label>
+              <button onclick="resetSliderGas(${idx},'ch4')" style="margin-left:auto;background:none;border:1px solid #b7d5c0;border-radius:6px;padding:1px 7px;font-size:0.75rem;cursor:pointer;color:#3d6356;">↺</button>
+            </div>
+            <div class="dual-slider" id="dslider-ch4-${idx}">
+              <div class="slider-track"></div>
+              <div class="slider-range" id="srange-ch4-${idx}" style="background:#2d6a4f;"></div>
+              <input type="range" id="slo-ch4-${idx}" min="0" max="${maxT}" value="0" step="1"
+                oninput="onSliderGas(${idx},'ch4')" style="--thumb-color:#2d6a4f;">
+              <input type="range" id="shi-ch4-${idx}" min="0" max="${maxT}" value="${maxT}" step="1"
+                oninput="onSliderGas(${idx},'ch4')" style="--thumb-color:#2d6a4f;">
+            </div>
+            <div class="slider-vals">
+              <span id="slo-val-ch4-${idx}" style="background:#2d6a4f;">0 s</span>
+              <span id="shi-val-ch4-${idx}" style="background:#2d6a4f;">${maxT} s</span>
+            </div>
           </div>
-          <div class="slider-vals">
-            <span id="slo-val-${idx}">0 s</span>
-            <span id="shi-val-${idx}">${maxT} s</span>
+
+          <!-- CO2 -->
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#f4a261;display:inline-block;flex-shrink:0;"></span>
+              <label style="margin:0;color:#a05010;">CO₂ — janela independente</label>
+              <button onclick="resetSliderGas(${idx},'co2')" style="margin-left:auto;background:none;border:1px solid #f4d1a0;border-radius:6px;padding:1px 7px;font-size:0.75rem;cursor:pointer;color:#a05010;">↺</button>
+            </div>
+            <div class="dual-slider" id="dslider-co2-${idx}">
+              <div class="slider-track"></div>
+              <div class="slider-range" id="srange-co2-${idx}" style="background:#f4a261;"></div>
+              <input type="range" id="slo-co2-${idx}" min="0" max="${maxT}" value="0" step="1"
+                oninput="onSliderGas(${idx},'co2')">
+              <input type="range" id="shi-co2-${idx}" min="0" max="${maxT}" value="${maxT}" step="1"
+                oninput="onSliderGas(${idx},'co2')">
+            </div>
+            <div class="slider-vals">
+              <span id="slo-val-co2-${idx}" style="background:#f4a261;">0 s</span>
+              <span id="shi-val-co2-${idx}" style="background:#f4a261;">${maxT} s</span>
+            </div>
           </div>
+
+          <!-- H2O -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#3498db;display:inline-block;flex-shrink:0;"></span>
+              <label style="margin:0;color:#1a5c8a;">H₂O — janela independente</label>
+              <button onclick="resetSliderGas(${idx},'h2o')" style="margin-left:auto;background:none;border:1px solid #a0c8f0;border-radius:6px;padding:1px 7px;font-size:0.75rem;cursor:pointer;color:#1a5c8a;">↺</button>
+            </div>
+            <div class="dual-slider" id="dslider-h2o-${idx}">
+              <div class="slider-track"></div>
+              <div class="slider-range" id="srange-h2o-${idx}" style="background:#3498db;"></div>
+              <input type="range" id="slo-h2o-${idx}" min="0" max="${maxT}" value="0" step="1"
+                oninput="onSliderGas(${idx},'h2o')">
+              <input type="range" id="shi-h2o-${idx}" min="0" max="${maxT}" value="${maxT}" step="1"
+                oninput="onSliderGas(${idx},'h2o')">
+            </div>
+            <div class="slider-vals">
+              <span id="slo-val-h2o-${idx}" style="background:#3498db;">0 s</span>
+              <span id="shi-val-h2o-${idx}" style="background:#3498db;">${maxT} s</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- STATS em tempo real -->
-        <div class="curve-stats" id="cstats-${idx}">
-          <div class="stat-item"><span class="stat-lbl">CH₄ slope</span><span class="stat-val-s" id="cs-ch4s-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">CO₂ slope</span><span class="stat-val-s" id="cs-co2s-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">CH₄ R²</span><span class="stat-val-s" id="cs-ch4r-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">CO₂ R²</span><span class="stat-val-s" id="cs-co2r-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">CH₄ flux(dia)</span><span class="stat-val-s" id="cs-ch4f-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">CO₂ flux(dia)</span><span class="stat-val-s" id="cs-co2f-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">n pontos</span><span class="stat-val-s" id="cs-npts-${idx}">—</span></div>
-          <div class="stat-item"><span class="stat-lbl">Janela</span><span class="stat-val-s" id="cs-win-${idx}">—</span></div>
+        <!-- STATS em tempo real — 3 colunas: CH4 | CO2 | H2O -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0;">
+
+          <div style="background:#f0faf4;border-radius:8px;padding:8px 10px;border-top:3px solid #2d6a4f;">
+            <div style="font-size:0.7rem;font-weight:700;color:#2d6a4f;margin-bottom:4px;">CH₄</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
+            <div class="stat-val-s" id="cs-ch4s-${idx}" style="font-size:0.78rem;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
+            <div class="stat-val-s" id="cs-ch4r-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">flux (dia)</div>
+            <div class="stat-val-s" id="cs-ch4f-${idx}" style="font-size:0.75rem;">—</div>
+            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-ch4w-${idx}">—</div>
+          </div>
+
+          <div style="background:#fff8f0;border-radius:8px;padding:8px 10px;border-top:3px solid #f4a261;">
+            <div style="font-size:0.7rem;font-weight:700;color:#a05010;margin-bottom:4px;">CO₂</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
+            <div class="stat-val-s" id="cs-co2s-${idx}" style="font-size:0.78rem;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
+            <div class="stat-val-s" id="cs-co2r-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">flux (dia)</div>
+            <div class="stat-val-s" id="cs-co2f-${idx}" style="font-size:0.75rem;">—</div>
+            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-co2w-${idx}">—</div>
+          </div>
+
+          <div style="background:#f0f6ff;border-radius:8px;padding:8px 10px;border-top:3px solid #3498db;">
+            <div style="font-size:0.7rem;font-weight:700;color:#1a5c8a;margin-bottom:4px;">H₂O</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
+            <div class="stat-val-s" id="cs-h2os-${idx}" style="font-size:0.78rem;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
+            <div class="stat-val-s" id="cs-h2or-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
+            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">n pts</div>
+            <div class="stat-val-s" id="cs-npts-${idx}" style="font-size:0.75rem;">—</div>
+            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-h2ow-${idx}">—</div>
+          </div>
+
         </div>
 
         <div class="curve-actions">
           <button class="btn btn-sm ${c.status==='accepted'?'btn-primary':'btn-ghost'}" onclick="setCurveStatus(${idx},'accepted')">✅ Aceitar</button>
           <button class="btn btn-sm ${c.status==='rejected'?'btn-danger':'btn-ghost'}" onclick="setCurveStatus(${idx},'rejected')">❌ Rejeitar</button>
-          <button class="btn btn-sm btn-ghost" onclick="resetSlider(${idx})" title="Resetar janela para o total">↺</button>
+          <button class="btn btn-sm btn-ghost" onclick="resetSlider(${idx})" title="Resetar todos">↺ Tudo</button>
         </div>`;
     }
 
@@ -1734,84 +1816,139 @@ function renderCurves() {
     if (c.rows.length >= 5) {
       setTimeout(() => {
         drawCurveChart(idx, c);
-        updateSliderTrack(idx);
+        ['ch4','co2','h2o'].forEach(g => updateSliderTrackGas(idx, g));
         updateCurveStats(idx);
       }, 60 + idx * 20);
     }
   });
 }
 
-// ---- Slider duplo ----
-function onSlider(idx) {
-  const slo = document.getElementById(`slo-${idx}`);
-  const shi = document.getElementById(`shi-${idx}`);
+// ---- Sliders independentes por gás ----
+function onSliderGas(idx, gas) {
+  const c = state.curves[idx];
+  if (!c || !c.winSel) return;
+
+  const slo = document.getElementById(`slo-${gas}-${idx}`);
+  const shi = document.getElementById(`shi-${gas}-${idx}`);
+  if (!slo || !shi) return;
+
   let lo = parseInt(slo.value), hi = parseInt(shi.value);
-  // Garantir lo < hi com margem mínima de 10s
-  if (lo >= hi - 10) {
-    if (document.activeElement === slo) lo = hi - 10;
-    else hi = lo + 10;
+  if (lo >= hi - 5) {
+    if (document.activeElement === slo) lo = hi - 5;
+    else hi = lo + 5;
     slo.value = lo; shi.value = hi;
   }
-  state.curves[idx].winSel = { lo, hi };
-  document.getElementById(`slo-val-${idx}`).textContent = lo + ' s';
-  document.getElementById(`shi-val-${idx}`).textContent = hi + ' s';
-  updateSliderTrack(idx);
+
+  c.winSel[gas] = { lo, hi };
+
+  const valLo = document.getElementById(`slo-val-${gas}-${idx}`);
+  const valHi = document.getElementById(`shi-val-${gas}-${idx}`);
+  if (valLo) valLo.textContent = lo + ' s';
+  if (valHi) valHi.textContent = hi + ' s';
+
+  updateSliderTrackGas(idx, gas);
   updateCurveStats(idx);
-  // Redesenha o gráfico com nova janela
-  drawCurveChart(idx, state.curves[idx]);
+
+  // Só redesenha se este gás for o que está visível no gráfico
+  if (state.currentGas === gas) drawCurveChart(idx, c);
 }
 
-function updateSliderTrack(idx) {
-  const slo = document.getElementById(`slo-${idx}`);
-  const shi = document.getElementById(`shi-${idx}`);
-  const range = document.getElementById(`srange-${idx}`);
+function updateSliderTrackGas(idx, gas) {
+  const slo   = document.getElementById(`slo-${gas}-${idx}`);
+  const shi   = document.getElementById(`shi-${gas}-${idx}`);
+  const range = document.getElementById(`srange-${gas}-${idx}`);
   if (!slo || !shi || !range) return;
   const max = parseInt(slo.max);
-  const lo = parseInt(slo.value), hi = parseInt(shi.value);
+  const lo  = parseInt(slo.value), hi = parseInt(shi.value);
   range.style.left  = (lo / max * 100) + '%';
   range.style.width = ((hi - lo) / max * 100) + '%';
 }
 
-function resetSlider(idx) {
+function updateSliderTrack(idx) {
+  ['ch4','co2','h2o'].forEach(g => updateSliderTrackGas(idx, g));
+}
+
+function resetSliderGas(idx, gas) {
   const c = state.curves[idx];
   if (!c || !c.times_s || !c.times_s.length) return;
   const maxT = Math.round(c.times_s[c.times_s.length - 1]);
-  document.getElementById(`slo-${idx}`).value = 0;
-  document.getElementById(`shi-${idx}`).value = maxT;
-  c.winSel = { lo: 0, hi: maxT };
-  document.getElementById(`slo-val-${idx}`).textContent = '0 s';
-  document.getElementById(`shi-val-${idx}`).textContent = maxT + ' s';
-  updateSliderTrack(idx);
+  const slo = document.getElementById(`slo-${gas}-${idx}`);
+  const shi = document.getElementById(`shi-${gas}-${idx}`);
+  if (slo) slo.value = 0;
+  if (shi) shi.value = maxT;
+  c.winSel[gas] = { lo: 0, hi: maxT };
+  const vl = document.getElementById(`slo-val-${gas}-${idx}`);
+  const vh = document.getElementById(`shi-val-${gas}-${idx}`);
+  if (vl) vl.textContent = '0 s';
+  if (vh) vh.textContent = maxT + ' s';
+  updateSliderTrackGas(idx, gas);
   updateCurveStats(idx);
-  drawCurveChart(idx, c);
+  if (state.currentGas === gas) drawCurveChart(idx, c);
 }
 
+function resetSlider(idx) {
+  ['ch4','co2','h2o'].forEach(g => resetSliderGas(idx, g));
+}
+
+// Retorna os dados filtrados por janela INDEPENDENTE de cada gás
 function getWindowedData(idx) {
   const c = state.curves[idx];
-  const { lo, hi } = c.winSel || { lo: 0, hi: 1e9 };
-  const mask = c.times_s.map((t,i) => t >= lo && t <= hi);
-  const times_w  = c.times_s.filter((_,i) => mask[i]);
-  const ch4_w    = c.ch4_vals.filter((_,i) => mask[i]);
-  const co2_w    = c.co2_vals.filter((_,i) => mask[i]);
-  const h2o_w    = c.h2o_vals.filter((_,i) => mask[i]);
-  return { times_w, ch4_w, co2_w, h2o_w };
+  const ws = c.winSel || { ch4:{lo:0,hi:1e9}, co2:{lo:0,hi:1e9}, h2o:{lo:0,hi:1e9} };
+
+  function filtered(vals, gas) {
+    const {lo,hi} = ws[gas] || {lo:0,hi:1e9};
+    const t_w = [], v_w = [];
+    c.times_s.forEach((t,i) => { if(t>=lo && t<=hi){ t_w.push(t); v_w.push(vals[i]); }});
+    return { times: t_w, vals: v_w };
+  }
+
+  const ch4 = filtered(c.ch4_vals, 'ch4');
+  const co2 = filtered(c.co2_vals, 'co2');
+  const h2o = filtered(c.h2o_vals, 'h2o');
+
+  return {
+    // mantém compatibilidade com código que usa times_w
+    times_w: ch4.times, ch4_w: ch4.vals, co2_w: co2.vals, h2o_w: h2o.vals,
+    ch4_t: ch4.times, co2_t: co2.times, h2o_t: h2o.times,
+  };
 }
 
 function updateCurveStats(idx) {
   const c = state.curves[idx];
   if (!c || c.rows.length < 5) return;
-  const { times_w, ch4_w, co2_w, h2o_w } = getWindowedData(idx);
-  if (times_w.length < 3) return;
 
-  const fit_ch4 = linearFit(times_w, ch4_w);
-  const fit_co2 = linearFit(times_w, co2_w);
-  const mean_h2o = h2o_w.reduce((a,b)=>a+b,0)/h2o_w.length;
+  const ws = c.winSel || { ch4:{lo:0,hi:1e9}, co2:{lo:0,hi:1e9}, h2o:{lo:0,hi:1e9} };
+
+  function winData(vals, gas) {
+    const {lo,hi} = ws[gas]||{lo:0,hi:1e9};
+    const t=[],v=[];
+    c.times_s.forEach((t_,i)=>{ if(t_>=lo&&t_<=hi){t.push(t_);v.push(vals[i]);}});
+    return {t,v};
+  }
+
+  const dCH4 = winData(c.ch4_vals,'ch4');
+  const dCO2 = winData(c.co2_vals,'co2');
+  const dH2O = winData(c.h2o_vals,'h2o');
+
+  if (dCH4.t.length < 3 || dCO2.t.length < 3) return;
+
+  const fit_ch4 = linearFit(dCH4.t, dCH4.v);
+  const fit_co2 = linearFit(dCO2.t, dCO2.v);
+  const fit_h2o = dH2O.t.length >= 3 ? linearFit(dH2O.t, dH2O.v) : {slope:0,r2:0};
+
+  // H2O média da janela CO2 (para cálculo de fluxo, como no script R)
+  const mean_h2o = dH2O.v.length ? dH2O.v.reduce((a,b)=>a+b)/dH2O.v.length : 0;
+
   const fch4 = calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o);
   const fco2 = calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o);
 
-  // Guardar stats ajustadas na curva (para exportação)
-  c.adj = { fit_ch4, fit_co2, mean_h2o, fch4, fco2,
-            winSel: { ...c.winSel }, n_pts: times_w.length };
+  // Salva para exportação — CH4 e CO2 com janelas independentes
+  c.adj = {
+    fit_ch4, fit_co2, mean_h2o, fch4, fco2,
+    winSel: { ch4:{...ws.ch4}, co2:{...ws.co2}, h2o:{...ws.h2o} },
+    n_pts: dCH4.t.length,
+    n_pts_co2: dCO2.t.length,
+  };
 
   const r2Class = r2 => r2 >= 0.8 ? 'good' : r2 >= 0.5 ? 'warn' : 'bad';
   const set = (id, val, cls='') => {
@@ -1819,14 +1956,20 @@ function updateCurveStats(idx) {
     if (el) { el.textContent = val; if (cls) el.className = 'stat-val-s ' + cls; }
   };
 
-  set(`cs-ch4s-${idx}`, (fit_ch4.slope*60).toFixed(4) + ' ppm/min');
-  set(`cs-co2s-${idx}`, (fit_co2.slope*60).toFixed(4) + ' ppm/min');
+  set(`cs-ch4s-${idx}`, (fit_ch4.slope*60).toFixed(4)+' ppm/min');
   set(`cs-ch4r-${idx}`, fit_ch4.r2.toFixed(3), r2Class(fit_ch4.r2));
+  set(`cs-ch4f-${idx}`, fch4.mg_m2_day.toFixed(3)+' mg/m²/d');
+  set(`cs-ch4w-${idx}`, `${ws.ch4.lo}–${ws.ch4.hi}s · ${dCH4.t.length}pts`);
+
+  set(`cs-co2s-${idx}`, (fit_co2.slope*60).toFixed(4)+' ppm/min');
   set(`cs-co2r-${idx}`, fit_co2.r2.toFixed(3), r2Class(fit_co2.r2));
-  set(`cs-ch4f-${idx}`, fch4.mg_m2_day.toFixed(3) + ' mg/m²/d');
-  set(`cs-co2f-${idx}`, fco2.mg_m2_day.toFixed(3) + ' mg/m²/d');
-  set(`cs-npts-${idx}`, times_w.length);
-  set(`cs-win-${idx}`, `${c.winSel.lo}–${c.winSel.hi} s`);
+  set(`cs-co2f-${idx}`, fco2.mg_m2_day.toFixed(3)+' mg/m²/d');
+  set(`cs-co2w-${idx}`, `${ws.co2.lo}–${ws.co2.hi}s · ${dCO2.t.length}pts`);
+
+  set(`cs-h2os-${idx}`, (fit_h2o.slope*60).toFixed(4)+' ppm/min');
+  set(`cs-h2or-${idx}`, fit_h2o.r2.toFixed(3), r2Class(fit_h2o.r2));
+  set(`cs-npts-${idx}`, dCH4.t.length);
+  set(`cs-h2ow-${idx}`, `${ws.h2o.lo}–${ws.h2o.hi}s · ${dH2O.t.length}pts`);
 }
 
 function drawCurveChart(idx, c) {
@@ -1845,8 +1988,10 @@ function drawCurveChart(idx, c) {
     allVals = c.h2o_vals.map(v=>v/1000); label = 'H₂O (×10³ ppm)'; color = '#3498db';
   }
 
-  // Janela de seleção
-  const { lo, hi } = c.winSel || { lo: 0, hi: 1e9 };
+  // Janela de seleção independente por gás
+  const _ws = c.winSel || {};
+  const _gasKey = gas === 'ch4' ? 'ch4' : gas === 'co2' ? 'co2' : 'h2o';
+  const { lo, hi } = _ws[_gasKey] || { lo: 0, hi: 1e9 };
 
   // Pontos fora da janela (cinza) e dentro (colorido)
   const outsideData = c.times_s.map((t,i) => t < lo || t > hi ? {x:t, y:allVals[i]} : null).filter(Boolean);
@@ -1980,7 +2125,11 @@ function computeResults() {
     const mean_h2o = adj ? adj.mean_h2o : c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
     const fch4 = adj ? adj.fch4 : calcFluxDay(fit_ch4.slope, c.win, M_CH4, mean_h2o);
     const fco2 = adj ? adj.fco2 : calcFluxDay(fit_co2.slope, c.win, M_CO2, mean_h2o);
-    const winSel = adj ? adj.winSel : {lo:0, hi:Math.round(c.times_s[c.times_s.length-1])};
+    const winSel = adj ? adj.winSel : {
+      ch4:{lo:0,hi:Math.round(c.times_s[c.times_s.length-1])},
+      co2:{lo:0,hi:Math.round(c.times_s[c.times_s.length-1])},
+      h2o:{lo:0,hi:Math.round(c.times_s[c.times_s.length-1])},
+    };
     const n_pts_used = adj ? adj.n_pts : c.rows.length;
     return {num:c.win.num,date:c.win.date,start:c.win.start,stop:c.win.stop,
       treatment:c.win.treatment||'N/A',
@@ -1989,7 +2138,8 @@ function computeResults() {
       r2_ch4:fit_ch4.r2,r2_co2:fit_co2.r2,
       slope_ch4:fit_ch4.slope,slope_co2:fit_co2.slope,
       mean_h2o,n_pts:c.rows.length,n_pts_used,
-      win_lo:winSel.lo, win_hi:winSel.hi,
+      win_ch4_lo:winSel.ch4?.lo??0, win_ch4_hi:winSel.ch4?.hi??0,
+      win_co2_lo:winSel.co2?.lo??0, win_co2_hi:winSel.co2?.hi??0,
       note:c.win.note||''};
   });
   updateResultsUI();
@@ -2275,8 +2425,8 @@ function downloadChart(canvasId,filename){
 function exportExcel(){
   if(typeof XLSX==='undefined'){alert('Aguarde o SheetJS.');return;}
   const treatments=[...new Set(state.results.map(r=>r.treatment))];
-  const h1=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','mean_H2O_ppm','n_points_total','n_points_used','win_start_s','win_end_s','Note'];
-  const d1=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day,r.flux_co2_day,r.flux_ch4_h,r.flux_co2_h,r.r2_ch4,r.r2_co2,r.slope_ch4,r.slope_co2,r.mean_h2o,r.n_pts,r.n_pts_used,r.win_lo,r.win_hi,r.note]);
+  const h1=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','mean_H2O_ppm','n_points_total','n_points_used','CH4_win_start_s','CH4_win_end_s','CO2_win_start_s','CO2_win_end_s','Note'];
+  const d1=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day,r.flux_co2_day,r.flux_ch4_h,r.flux_co2_h,r.r2_ch4,r.r2_co2,r.slope_ch4,r.slope_co2,r.mean_h2o,r.n_pts,r.n_pts_used,r.win_ch4_lo,r.win_ch4_hi,r.win_co2_lo,r.win_co2_hi,r.note]);
   const h2=['Treatment','n','CH4_mean_mg_m2_day','CH4_sd','CH4_min','CH4_max','CO2_mean_mg_m2_day','CO2_sd','CO2_min','CO2_max'];
   const d2=treatments.map(t=>{
     const rows=state.results.filter(r=>r.treatment===t);
@@ -2292,8 +2442,8 @@ function exportExcel(){
 }
 
 function exportCSV(){
-  const h=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','n_points_total','n_points_used','win_start_s','win_end_s','Note'];
-  const rows=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day?.toFixed(6),r.flux_co2_day?.toFixed(6),r.flux_ch4_h?.toFixed(6),r.flux_co2_h?.toFixed(6),r.r2_ch4?.toFixed(6),r.r2_co2?.toFixed(6),r.slope_ch4?.toExponential(8),r.slope_co2?.toExponential(8),r.n_pts,r.n_pts_used,r.win_lo,r.win_hi,r.note]);
+  const h=['Num','Date','Start','Stop','Treatment','CH4_mg_m2_day','CO2_mg_m2_day','CH4_mg_m2_h','CO2_mg_m2_h','CH4_R2','CO2_R2','CH4_slope_ppm_s','CO2_slope_ppm_s','n_points_total','n_points_used','CH4_win_start_s','CH4_win_end_s','CO2_win_start_s','CO2_win_end_s','Note'];
+  const rows=state.results.map(r=>[r.num,r.date,r.start,r.stop,r.treatment,r.flux_ch4_day?.toFixed(6),r.flux_co2_day?.toFixed(6),r.flux_ch4_h?.toFixed(6),r.flux_co2_h?.toFixed(6),r.r2_ch4?.toFixed(6),r.r2_co2?.toFixed(6),r.slope_ch4?.toExponential(8),r.slope_co2?.toExponential(8),r.n_pts,r.n_pts_used,r.win_ch4_lo,r.win_ch4_hi,r.win_co2_lo,r.win_co2_hi,r.note]);
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download='carbon_flux_results.csv';a.click();
 }
 
