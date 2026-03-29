@@ -973,6 +973,51 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
 
 <!-- ============ SECTION: UPLOAD ============ -->
 <div class="section" id="section-upload">
+
+  <!-- Card de modelos -->
+  <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#f0faf4,#e8f5e9);border:1.5px solid var(--green-light);">
+    <div class="card-title">📥 Arquivos modelo para download</div>
+    <div class="card-sub" style="margin-bottom:16px;">
+      Baixe os modelos antes de fazer upload. O <strong>Times.xlsx</strong> define os horários e parâmetros de cada medição.
+      O <strong>modelo TXT</strong> mostra o formato esperado do analisador LGR/Tiger.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="modelo-grid">
+
+      <div style="background:#fff;border-radius:10px;padding:18px 16px;border:1.5px solid var(--green-light);text-align:center;">
+        <div style="font-size:2.2rem;margin-bottom:8px;">📊</div>
+        <div style="font-weight:700;color:var(--green-dark);margin-bottom:4px;">Times_modelo.xlsx</div>
+        <div style="font-size:0.8rem;color:var(--text-mid);margin-bottom:12px;">
+          Planilha de horários com 3 medições de exemplo.<br>
+          Colunas: <code>used_start</code>, <code>used_stop</code>, <code>Date</code>, <code>Ta</code>, <code>luchtdruk</code>, <code>plot</code>...
+        </div>
+        <button class="btn btn-primary" onclick="downloadModelo('xlsx')" style="width:100%;">
+          ⬇ Baixar Times modelo
+        </button>
+      </div>
+
+      <div style="background:#fff;border-radius:10px;padding:18px 16px;border:1.5px solid #b7d5c0;text-align:center;">
+        <div style="font-size:2.2rem;margin-bottom:8px;">🗂️</div>
+        <div style="font-weight:700;color:var(--green-dark);margin-bottom:4px;">modelo_LGR.txt</div>
+        <div style="font-size:0.8rem;color:var(--text-mid);margin-bottom:12px;">
+          Arquivo de exemplo no formato LGR/Tiger.<br>
+          Contém cabeçalho + 10 linhas de dados reais das 35 colunas do analisador.
+        </div>
+        <button class="btn btn-ghost" onclick="downloadModelo('txt')" style="width:100%;">
+          ⬇ Baixar TXT modelo
+        </button>
+      </div>
+
+    </div>
+    <script>
+      if (window.innerWidth < 600) {
+        document.getElementById('modelo-grid').style.gridTemplateColumns = '1fr';
+      }
+    </script>
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(45,106,79,0.08);border-radius:8px;font-size:0.82rem;color:var(--text-mid);">
+      <strong>Como usar:</strong> Preencha o Times.xlsx com seus horários reais (um arquivo de medição = uma linha por réplica).
+      Faça upload do arquivo TXT do analisador + o Times preenchido na área abaixo. ↓
+    </div>
+  </div>
   <div class="section-title">Upload de Dados</div>
   <div class="section-sub">Carregue o arquivo TXT bruto do analisador LGR e o arquivo Times.xlsx com as janelas de incubação. Não modifique o TXT — ele é lido exatamente como sai do aparelho.</div>
 
@@ -1182,6 +1227,14 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
         <div style="margin-bottom:16px;">
           <div style="font-weight:700;color:var(--green-dark);font-size:0.9rem;margin-bottom:10px;">
             📂 Arquivos do projeto
+          </div>
+
+          <!-- Links para modelos -->
+          <div style="margin-bottom:10px;padding:8px 12px;background:var(--green-pale);border-radius:8px;font-size:0.82rem;">
+            📥 Não tem os arquivos no formato certo?
+            <button onclick="downloadModelo('xlsx')" style="background:none;border:none;color:var(--green-mid);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.82rem;">Baixar Times modelo</button>
+            &nbsp;|&nbsp;
+            <button onclick="downloadModelo('txt')" style="background:none;border:none;color:var(--green-mid);font-weight:700;cursor:pointer;text-decoration:underline;font-size:0.82rem;">Baixar TXT modelo</button>
           </div>
 
           <!-- Upload TXT -->
@@ -3804,6 +3857,31 @@ async function deleteCloudResult(docId) {
     await deleteDoc(doc(db,'projects',cloud.project.code,'results',docId));
     loadResultsList();
   } catch(e) { alert('Erro: ' + e.message); }
+}
+
+
+// ================================================================
+// MODELOS PARA DOWNLOAD — embutidos como base64
+// ================================================================
+const MODELO_XLSX_B64 = "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";
+const MODELO_TXT_B64  = "U046M0s0MzQzMDAwMDAwNDY5NCBCRDpGZWIgMjIgMjAxOSBWQzo2YzBlODc3IE1ENTpmZTk1MDIwMDg5MGMyMGI5YTAwOGU2MzEyYzk4ZWE3MApTeXNUaW1lLCAgICAgICAgICAgICAgICAgICAgICBUaW1lLCAgICAgIFtDSDRdX3BwbSwgICBbQ0g0XV9wcG1fc2QsICAgICAgW0NPMl1fcHBtLCAgIFtDTzJdX3BwbV9zZCwgICAgICBbSDJPXV9wcG0sICAgW0gyT11fcHBtX3NkLCAgICAgW0NINF1kX3BwbSwgIFtDSDRdZF9wcG1fc2QsICAgICBbQ08yXWRfcHBtLCAgW0NPMl1kX3BwbV9zZCwgICAgICBHYXNQX3RvcnIsICAgR2FzUF90b3JyX3NkLCAgICAgICAgIEdhc1RfQywgICAgICBHYXNUX0Nfc2QsICAgICAgICAgQW1iVF9DLCAgICAgIEFtYlRfQ19zZCwgICAgICAgICBSRDBfdXMsICAgICAgUkQwX3VzX3NkLCAgICAgICAgIFJEMV91cywgICAgICBSRDFfdXNfc2QsICAgICAgICAgTFRDMF92LCAgICAgIExUQzBfdl9zZCwgICAgICAgICBMVEMxX3YsICAgICAgTFRDMV92X3NkLCAgICAgICAgIEJhdHRfdiwgICAgICBCYXR0X3Zfc2QsICAgQkFUVF9QRVJDRU5ULEJBVFRfUEVSQ0VOVF9zZCwgVGVtcF9TdGF0dXNfbUEsQW5hbHl6ZXJfU3RhdHVzX21BLCAgICAgICBGaXRfRmxhZywgICAgICBNSVVfVkFMVkUsICAgICAgIE1JVV9ERVNDCjI2LzAzLzIwMjYgMTg6MzU6NDIuNjk0LCAyNi8wMy8yMDI2IDE4OjM1OjQyLjYzOSwgMS45NzE3NmUrMCwgMC4wMDAwMGUrMCwgNC4zNjI4N2UrMiwgMC4wMDAwMGUrMCwgMi45OTI0M2UrNCwgMC4wMDAwMGUrMCwgMi4wMzI1OGUrMCwgMC4wMDAwMGUrMCwgNC40OTc0NWUrMiwgMC4wMDAwMGUrMCwgNS4wMDAyOWUrMiwgMC4wMDAwMGUrMCwgMi45MzY4MmUrMSwgMC4wMDAwMGUrMCwgMy4yOTkzN2UrMSwgMC4wMDAwMGUrMCwgMi45NTA0NmUrMCwgMC4wMDAwMGUrMCwgMi40MTU2MWUrMCwgMC4wMDAwMGUrMCwgMy43MjkzMWUtMSwgMC4wMDAwMGUrMCwgLTQuOTE1MTJlKzAsIDAuMDAwMDBlKzAsIDUuNjIwMzVlKzAsIDAuMDAwMDBlKzAsIDMuNDc1OThlKzIsIDAuMDAwMDBlKzAsIDIuMDAwMDBlKzEsIDEuNTAwMDBlKzEsIDIsIC0xLCBEaXNhYmxlZAoyNi8wMy8yMDI2IDE4OjM1OjQzLjY4NCwgMjYvMDMvMjAyNiAxODozNTo0My42MzQsIDEuOTkzODdlKzAsIDAuMDAwMDBlKzAsIDQuNTk2MDVlKzIsIDAuMDAwMDBlKzAsIDMuNDkwMzZlKzQsIDAuMDAwMDBlKzAsIDIuMDY1OThlKzAsIDAuMDAwMDBlKzAsIDQuNzYyMjdlKzIsIDAuMDAwMDBlKzAsIDQuOTk5NDllKzIsIDAuMDAwMDBlKzAsIDIuOTM0NDBlKzEsIDAuMDAwMDBlKzAsIDMuMzAwMTRlKzEsIDAuMDAwMDBlKzAsIDIuOTUxODZlKzAsIDAuMDAwMDBlKzAsIDIuNDE1MzllKzAsIDAuMDAwMDBlKzAsIDMuNzI5MzFlLTEsIDAuMDAwMDBlKzAsIC00LjkxNTEyZSswLCAwLjAwMDAwZSswLCA1LjYyMDAzZSswLCAwLjAwMDAwZSswLCAzLjQ3NTQ2ZSsyLCAwLjAwMDAwZSswLCAyLjAwMDAwZSsxLCAxLjUwMDAwZSsxLCAyLCAtMSwgRGlzYWJsZWQKMjYvMDMvMjAyNiAxODozNTo0NC42NzksIDI2LzAzLzIwMjYgMTg6MzU6NDQuNjI4LCAyLjAwMTIwZSswLCAwLjAwMDAwZSswLCA0LjYyMzY3ZSsyLCAwLjAwMDAwZSswLCAzLjUyMzI2ZSs0LCAwLjAwMDAwZSswLCAyLjA3NDI5ZSswLCAwLjAwMDAwZSswLCA0Ljc5MjUzZSsyLCAwLjAwMDAwZSswLCA0Ljk4NTI5ZSsyLCAwLjAwMDAwZSswLCAyLjkzNjg1ZSsxLCAwLjAwMDAwZSswLCAzLjMwMTU0ZSsxLCAwLjAwMDAwZSswLCAyLjk0OTQ2ZSswLCAwLjAwMDAwZSswLCAyLjQxNTkwZSswLCAwLjAwMDAwZSswLCAzLjcyODY2ZS0xLCAwLjAwMDAwZSswLCAtNC45MTQ2NGUrMCwgMC4wMDAwMGUrMCwgNS42MjAwNWUrMCwgMC4wMDAwMGUrMCwgMy40NzU0OGUrMiwgMC4wMDAwMGUrMCwgMi4wMDAwMGUrMSwgMS41MDAwMGUrMSwgMiwgLTEsIERpc2FibGVkCjI2LzAzLzIwMjYgMTg6MzU6NDUuNjczLCAyNi8wMy8yMDI2IDE4OjM1OjQ1LjYyMiwgMS45OTkzMWUrMCwgMC4wMDAwMGUrMCwgNC42NDEyOWUrMiwgMC4wMDAwMGUrMCwgMy41MTkzNWUrNCwgMC4wMDAwMGUrMCwgMi4wNzIyNGUrMCwgMC4wMDAwMGUrMCwgNC44MTA1OWUrMiwgMC4wMDAwMGUrMCwgNC45OTY1NGUrMiwgMC4wMDAwMGUrMCwgMi45MzcxMGUrMSwgMC4wMDAwMGUrMCwgMy4zMDE2M2UrMSwgMC4wMDAwMGUrMCwgMi45NDkyOWUrMCwgMC4wMDAwMGUrMCwgMi40MTQzMGUrMCwgMC4wMDAwMGUrMCwgMy43Mjg2NmUtMSwgMC4wMDAwMGUrMCwgLTQuOTE0NjRlKzAsIDAuMDAwMDBlKzAsIDUuNjIwMDZlKzAsIDAuMDAwMDBlKzAsIDMuNDc1NTFlKzIsIDAuMDAwMDBlKzAsIDIuMDAwMDBlKzEsIDEuNTAwMDBlKzEsIDIsIC0xLCBEaXNhYmxlZAoyNi8wMy8yMDI2IDE4OjM1OjQ2LjY2OCwgMjYvMDMvMjAyNiAxODozNTo0Ni42MTcsIDEuOTk2NTRlKzAsIDAuMDAwMDBlKzAsIDQuNjM2NTllKzIsIDAuMDAwMDBlKzAsIDMuNTM2MzNlKzQsIDAuMDAwMDBlKzAsIDIuMDY5NzNlKzAsIDAuMDAwMDBlKzAsIDQuODA2NTZlKzIsIDAuMDAwMDBlKzAsIDQuOTk4ODFlKzIsIDAuMDAwMDBlKzAsIDIuOTM1NjhlKzEsIDAuMDAwMDBlKzAsIDMuMzAxODZlKzEsIDAuMDAwMDBlKzAsIDIuOTUxMThlKzAsIDAuMDAwMDBlKzAsIDIuNDE1NDFlKzAsIDAuMDAwMDBlKzAsIDMuNzI3ODhlLTEsIDAuMDAwMDBlKzAsIC00LjkxNDQyZSswLCAwLjAwMDAwZSswLCA1LjYyMDA3ZSswLCAwLjAwMDAwZSswLCAzLjQ3NTUyZSsyLCAwLjAwMDAwZSswLCAyLjAwMDAwZSsxLCAxLjUwMDAwZSsxLCAyLCAtMSwgRGlzYWJsZWQKMjYvMDMvMjAyNiAxODozNTo0Ny42NjksIDI2LzAzLzIwMjYgMTg6MzU6NDcuNjExLCAxLjk5OTYzZSswLCAwLjAwMDAwZSswLCA0LjY0MDc3ZSsyLCAwLjAwMDAwZSswLCAzLjUzODg1ZSs0LCAwLjAwMDAwZSswLCAyLjA3Mjk5ZSswLCAwLjAwMDAwZSswLCA0LjgxMTAzZSsyLCAwLjAwMDAwZSswLCA0Ljk5ODM4ZSsyLCAwLjAwMDAwZSswLCAyLjkzMzE5ZSsxLCAwLjAwMDAwZSswLCAzLjMwMjMwZSsxLCAwLjAwMDAwZSswLCAyLjk1MDM1ZSswLCAwLjAwMDAwZSswLCAyLjQxNTgyZSswLCAwLjAwMDAwZSswLCAzLjcyNzA5ZS0xLCAwLjAwMDAwZSswLCAtNC45MTQyNmUrMCwgMC4wMDAwMGUrMCwgNS42MjAwNmUrMCwgMC4wMDAwMGUrMCwgMy40NzU1MGUrMiwgMC4wMDAwMGUrMCwgMi4wMDAwMGUrMSwgMS41MDAwMGUrMSwgMiwgLTEsIERpc2FibGVkCjI2LzAzLzIwMjYgMTg6MzU6NDguNjYyLCAyNi8wMy8yMDI2IDE4OjM1OjQ4LjYwNiwgMi4wMDA3MGUrMCwgMC4wMDAwMGUrMCwgNC42NDA5MGUrMiwgMC4wMDAwMGUrMCwgMy41NDY5MGUrNCwgMC4wMDAwMGUrMCwgMi4wNzQyN2UrMCwgMC4wMDAwMGUrMCwgNC44MTE1NmUrMiwgMC4wMDAwMGUrMCwgNC45OTc0N2UrMiwgMC4wMDAwMGUrMCwgMi45MzUwMmUrMSwgMC4wMDAwMGUrMCwgMy4zMDE1NGUrMSwgMC4wMDAwMGUrMCwgMi45NTEwNGUrMCwgMC4wMDAwMGUrMCwgMi40MTUxNGUrMCwgMC4wMDAwMGUrMCwgMy43MjcwOWUtMSwgMC4wMDAwMGUrMCwgLTQuOTE0MjZlKzAsIDAuMDAwMDBlKzAsIDUuNjIwMzhlKzAsIDAuMDAwMDBlKzAsIDMuNDc2MDNlKzIsIDAuMDAwMDBlKzAsIDIuMDAwMDBlKzEsIDEuNTAwMDBlKzEsIDIsIC0xLCBEaXNhYmxlZAoyNi8wMy8yMDI2IDE4OjM1OjQ5LjY1MywgMjYvMDMvMjAyNiAxODozNTo0OS42MDEsIDIuMDAwNDVlKzAsIDAuMDAwMDBlKzAsIDQuNjM5MTZlKzIsIDAuMDAwMDBlKzAsIDMuNTMxNjNlKzQsIDAuMDAwMDBlKzAsIDIuMDczNjhlKzAsIDAuMDAwMDBlKzAsIDQuODA4OTllKzIsIDAuMDAwMDBlKzAsIDUuMDAwNDBlKzIsIDAuMDAwMDBlKzAsIDIuOTM2MDBlKzEsIDAuMDAwMDBlKzAsIDMuMzAyMjNlKzEsIDAuMDAwMDBlKzAsIDIuOTUxMzVlKzAsIDAuMDAwMDBlKzAsIDIuNDE1MzFlKzAsIDAuMDAwMDBlKzAsIDMuNzI2MzRlLTEsIDAuMDAwMDBlKzAsIC00LjkxNDE3ZSswLCAwLjAwMDAwZSswLCA1LjYyMDM4ZSswLCAwLjAwMDAwZSswLCAzLjQ3NjAzZSsyLCAwLjAwMDAwZSswLCAyLjAwMDAwZSsxLCAxLjUwMDAwZSsxLCAyLCAtMSwgRGlzYWJsZWQKMjYvMDMvMjAyNiAxODozNTo1MC42NDIsIDI2LzAzLzIwMjYgMTg6MzU6NTAuNTk1LCAxLjk5OTY5ZSswLCAwLjAwMDAwZSswLCA0LjYzNzg3ZSsyLCAwLjAwMDAwZSswLCAzLjU1MzQ3ZSs0LCAwLjAwMDAwZSswLCAyLjA3MzM2ZSswLCAwLjAwMDAwZSswLCA0LjgwODc0ZSsyLCAwLjAwMDAwZSswLCA1LjAwMTI1ZSsyLCAwLjAwMDAwZSswLCAyLjkzNTkwZSsxLCAwLjAwMDAwZSswLCAzLjMwMzM4ZSsxLCAwLjAwMDAwZSswLCAyLjk1MDEwZSswLCAwLjAwMDAwZSswLCAyLjQxNTkyZSswLCAwLjAwMDAwZSswLCAzLjcyNjM0ZS0xLCAwLjAwMDAwZSswLCAtNC45MTQxN2UrMCwgMC4wMDAwMGUrMCwgNS42MjA0M2UrMCwgMC4wMDAwMGUrMCwgMy40NzYxMWUrMiwgMC4wMDAwMGUrMCwgMi4wMDAwMGUrMSwgMS41MDAwMGUrMSwgMiwgLTEsIERpc2FibGVkCjI2LzAzLzIwMjYgMTg6MzU6NTEuNjQxLCAyNi8wMy8yMDI2IDE4OjM1OjUxLjU4OSwgMi4wMDEyNWUrMCwgMC4wMDAwMGUrMCwgNC42Mzc3OGUrMiwgMC4wMDAwMGUrMCwgMy41NTQ4MGUrNCwgMC4wMDAwMGUrMCwgMi4wNzUwMWUrMCwgMC4wMDAwMGUrMCwgNC44MDg3MmUrMiwgMC4wMDAwMGUrMCwgNC45OTg4NWUrMiwgMC4wMDAwMGUrMCwgMi45MzY0NmUrMSwgMC4wMDAwMGUrMCwgMy4zMDQ4OWUrMSwgMC4wMDAwMGUrMCwgMi45NDk4NWUrMCwgMC4wMDAwMGUrMCwgMi40MTU2NmUrMCwgMC4wMDAwMGUrMCwgMy43MjU3NWUtMSwgMC4wMDAwMGUrMCwgLTQuOTE0MTNlKzAsIDAuMDAwMDBlKzAsIDUuNjIwNDNlKzAsIDAuMDAwMDBlKzAsIDMuNDc2MTFlKzIsIDAuMDAwMDBlKzAsIDIuMDAwMDBlKzEsIDEuMzAwMDBlKzEsIDIsIC0xLCBEaXNhYmxlZAo=";
+
+function downloadModelo(tipo) {
+  if (tipo === 'xlsx') {
+    const bytes = Uint8Array.from(atob(MODELO_XLSX_B64), c => c.charCodeAt(0));
+    const blob  = new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a     = document.createElement('a');
+    a.href      = URL.createObjectURL(blob);
+    a.download  = 'Times_modelo_CarbonFlux.xlsx';
+    a.click();
+  } else {
+    const text = atob(MODELO_TXT_B64);
+    const blob = new Blob([text], {type:'text/plain'});
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = 'modelo_LGR_CarbonFlux.txt';
+    a.click();
+  }
 }
 
 // Fechar modal clicando fora
