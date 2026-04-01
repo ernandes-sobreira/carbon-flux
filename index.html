@@ -1024,14 +1024,16 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   <div class="section-title">Upload de Dados</div>
   <div class="section-sub">Carregue o arquivo TXT bruto do analisador LGR e o arquivo Times.xlsx com as janelas de incubação. Não modifique o TXT — ele é lido exatamente como sai do aparelho.</div>
 
-  <div class="alert alert-info" style="margin-bottom:20px;">
-    📋 <strong>Não tem o Times.xlsx ainda?</strong> &nbsp;
-    Use o template abaixo como modelo. Ele contém todas as colunas obrigatórias no formato correto (compatível com o Carbon-Flux <em>e</em> com o script R do Radboud).
-    Preencha com suas medições e salve como <code>.xlsx</code>.
-    <br><br>
-    <strong>ATENÇÃO:</strong> Os horários devem ser digitados como <strong>texto</strong> (formato de célula = <code>@</code>) no padrão <code>HH:MM:SS</code> (ex: <code>13:03:30</code>) e a data como <code>YYYY-MM-DD</code> (ex: <code>2025-08-26</code>). Não use formato de hora/data do Excel (números seriais). Se preferir personalizado, configure a célula como <strong>Texto</strong> ou use o formato personalizado <code>hh:mm:ss</code> e confirme que o valor aparece como string, não como número.
-    O campo <strong>tube.l</strong> deve ser em <strong>metros</strong> (ex: <code>0.20</code> para 20 cm de tubo).
+  <div style="background:#e8f5e9;border-left:4px solid #43a047;border-radius:8px;padding:16px 20px;margin-bottom:20px;color:#1b5e20;">
+    <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;">📋 Não tem o Times.xlsx ainda?</div>
+    <div style="font-size:0.9rem;line-height:1.6;margin-bottom:10px;">Use o template abaixo. Contém todas as colunas obrigatórias no formato compatível com o Carbon-Flux e com o script R do Radboud.</div>
+    <div style="background:#fff;border-radius:6px;padding:10px 16px;font-size:0.87rem;line-height:2;">
+      <div><strong>Horarios:</strong> <code>used_start</code> e <code>used_stop</code> — formato Hora do Excel (<code>h:mm:ss</code>) ou texto (<code>19:59:09</code>)</div>
+      <div><strong>Data:</strong> <code>Date</code> — texto no formato <code>YYYY-MM-DD</code> (ex: <code>2026-03-27</code>)</div>
+      <div><strong>Tubo:</strong> <code>tube.l</code> — aceita cm (ex: <code>20</code>) ou metros (ex: <code>0.20</code>), conversao automatica</div>
+    </div>
   </div>
+
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
     <div class="card">
@@ -1328,13 +1330,31 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;" id="curve-controls" style="display:none">
     <button class="btn btn-sm btn-primary" onclick="acceptAll()">✅ Aceitar todas</button>
     <button class="btn btn-sm btn-danger"  onclick="rejectAll()">❌ Rejeitar todas</button>
-    <button class="btn btn-sm btn-ghost"   onclick="showGas('ch4')">CH₄</button>
-    <button class="btn btn-sm btn-ghost"   onclick="showGas('co2')">CO₂</button>
-    <button class="btn btn-sm btn-ghost"   onclick="showGas('h2o')">H₂O</button>
+
+    <!-- Seletor Gas A (esquerda) -->
+    <div style="display:flex;align-items:center;gap:6px;background:#f0faf4;border:1.5px solid #2d6a4f;border-radius:8px;padding:4px 10px;">
+      <span style="font-size:0.75rem;font-weight:700;color:#2d6a4f;">Gas A</span>
+      <select id="gasA-select" onchange="updateGasSelectors()" style="border:none;background:transparent;font-size:0.85rem;font-weight:700;color:#2d6a4f;cursor:pointer;padding:2px 4px;">
+        <option value="ch4" selected>CH₄</option>
+        <option value="co2">CO₂</option>
+        <option value="h2o">H₂O</option>
+      </select>
+    </div>
+
+    <!-- Seletor Gas B (direita) -->
+    <div style="display:flex;align-items:center;gap:6px;background:#fff8f0;border:1.5px solid #f4a261;border-radius:8px;padding:4px 10px;">
+      <span style="font-size:0.75rem;font-weight:700;color:#a05010;">Gas B</span>
+      <select id="gasB-select" onchange="updateGasSelectors()" style="border:none;background:transparent;font-size:0.85rem;font-weight:700;color:#a05010;cursor:pointer;padding:2px 4px;">
+        <option value="ch4">CH₄</option>
+        <option value="co2" selected>CO₂</option>
+        <option value="h2o">H₂O</option>
+      </select>
+    </div>
+
     <button class="btn btn-sm btn-accent"  onclick="applyAndGoResults()" style="margin-left:auto;">
       📊 Aplicar ajustes → Resultados
     </button>
-    <span style="font-size:0.75rem;color:#52b788;margin-left:4px;" title="O Excel exportado incluirá os segundos usados de cada curva ajustada">⏱ Janelas ajustadas são salvas no Excel</span>
+    <span style="font-size:0.75rem;color:#52b788;" title="O Excel exportado incluirá os segundos usados de cada curva ajustada">⏱ Janelas ajustadas salvas no Excel</span>
   </div>
 
   <div class="curve-grid" id="curve-grid"></div>
@@ -1491,10 +1511,10 @@ main { max-width: 1260px; margin: 0 auto; padding: 36px 32px 60px; }
               <th>#</th><th>Data</th><th>Início</th><th>Fim</th><th>Tratamento</th>
               <th>CH₄ flux<br>(mg m⁻²dia⁻¹)</th>
               <th>CO₂ flux<br>(mg m⁻²dia⁻¹)</th>
-              <th>CH₄ flux<br>(mg m⁻²h⁻¹)</th>
-              <th>CO₂ flux<br>(mg m⁻²h⁻¹)</th>
               <th>CH₄ R²</th><th>CO₂ R²</th>
               <th>CH₄ slope<br>(ppm/s)</th><th>CO₂ slope<br>(ppm/s)</th>
+              <th>CH₄ janela<br>(s usados)</th>
+              <th>CO₂ janela<br>(s usados)</th>
               <th>n pts</th><th>Nota</th>
             </tr>
           </thead>
@@ -2183,8 +2203,37 @@ function renderCurves() {
           <span class="curve-num">Medição #${c.win.num}</span>
           <span class="curve-meta">${c.win.start} – ${c.win.stop} ${treatTag} ${noteTag}</span>
         </div>
-        <div class="curve-canvas-wrap">
-          <canvas id="canvas-${idx}"></canvas>
+
+        <!-- DOIS CANVAS LADO A LADO: Gas A (esq) + Gas B (dir) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:#2d6a4f;margin-bottom:4px;text-align:center;" id="label-gasA-${idx}">Gas A</div>
+            <div style="position:relative;width:100%;height:170px;">
+              <canvas id="canvasA-${idx}" style="width:100%;height:100%;"></canvas>
+            </div>
+            <div id="stats-gasA-${idx}" style="background:#f0faf4;border-radius:6px;padding:6px 10px;margin-top:4px;font-size:0.78rem;line-height:1.7;border-top:2px solid #2d6a4f;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span>slope: <strong id="sa-slope-${idx}">—</strong></span>
+                <span>R²: <strong id="sa-r2-${idx}">—</strong></span>
+                <span>janela: <strong id="sa-win-${idx}">—</strong></span>
+              </div>
+              <div>flux: <strong id="sa-flux-${idx}">—</strong></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:#a05010;margin-bottom:4px;text-align:center;" id="label-gasB-${idx}">Gas B</div>
+            <div style="position:relative;width:100%;height:170px;">
+              <canvas id="canvasB-${idx}" style="width:100%;height:100%;"></canvas>
+            </div>
+            <div id="stats-gasB-${idx}" style="background:#fff8f0;border-radius:6px;padding:6px 10px;margin-top:4px;font-size:0.78rem;line-height:1.7;border-top:2px solid #f4a261;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span>slope: <strong id="sb-slope-${idx}">—</strong></span>
+                <span>R²: <strong id="sb-r2-${idx}">—</strong></span>
+                <span>janela: <strong id="sb-win-${idx}">—</strong></span>
+              </div>
+              <div>flux: <strong id="sb-flux-${idx}">—</strong></div>
+            </div>
+          </div>
         </div>
 
         <!-- SLIDERS INDEPENDENTES POR GÁS -->
@@ -2255,66 +2304,39 @@ function renderCurves() {
 
         </div>
 
-        <!-- STATS em tempo real — 3 colunas: CH4 | CO2 | H2O -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0;">
-
-          <div style="background:#f0faf4;border-radius:8px;padding:8px 10px;border-top:3px solid #2d6a4f;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <span style="font-size:0.7rem;font-weight:700;color:#2d6a4f;">CH₄</span>
+        <!-- STATUS POR GÁS (accept/reject individual) -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:#f8fbf8;border-radius:6px;border:1px solid #e0ede0;">
+          <span style="font-size:0.75rem;font-weight:700;color:var(--text-mid);align-self:center;">Status por gás:</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:0.75rem;font-weight:700;color:#2d6a4f;">CH₄</span>
             <span id="gas-status-ch4-${idx}">
-              <button onclick="setGasStatus(${idx},'ch4','accepted')" title="Aceitar CH₄"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
-              <button onclick="setGasStatus(${idx},'ch4','rejected')" title="Rejeitar CH₄"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+              <button onclick="setGasStatus(${idx},'ch4','accepted')" title="Aceitar CH₄" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'ch4','rejected')" title="Rejeitar CH₄" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
             </span>
           </div>
-            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
-            <div class="stat-val-s" id="cs-ch4s-${idx}" style="font-size:0.78rem;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
-            <div class="stat-val-s" id="cs-ch4r-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">flux (dia)</div>
-            <div class="stat-val-s" id="cs-ch4f-${idx}" style="font-size:0.75rem;">—</div>
-            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-ch4w-${idx}">—</div>
-          </div>
-
-          <div style="background:#fff8f0;border-radius:8px;padding:8px 10px;border-top:3px solid #f4a261;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <span style="font-size:0.7rem;font-weight:700;color:#a05010;">CO₂</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:0.75rem;font-weight:700;color:#a05010;">CO₂</span>
             <span id="gas-status-co2-${idx}">
-              <button onclick="setGasStatus(${idx},'co2','accepted')" title="Aceitar CO₂"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
-              <button onclick="setGasStatus(${idx},'co2','rejected')" title="Rejeitar CO₂"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+              <button onclick="setGasStatus(${idx},'co2','accepted')" title="Aceitar CO₂" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'co2','rejected')" title="Rejeitar CO₂" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
             </span>
           </div>
-            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
-            <div class="stat-val-s" id="cs-co2s-${idx}" style="font-size:0.78rem;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
-            <div class="stat-val-s" id="cs-co2r-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">flux (dia)</div>
-            <div class="stat-val-s" id="cs-co2f-${idx}" style="font-size:0.75rem;">—</div>
-            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-co2w-${idx}">—</div>
-          </div>
-
-          <div style="background:#f0f6ff;border-radius:8px;padding:8px 10px;border-top:3px solid #3498db;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <span style="font-size:0.7rem;font-weight:700;color:#1a5c8a;">H₂O</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:0.75rem;font-weight:700;color:#1a5c8a;">H₂O</span>
             <span id="gas-status-h2o-${idx}">
-              <button onclick="setGasStatus(${idx},'h2o','accepted')" title="Aceitar H₂O"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
-              <button onclick="setGasStatus(${idx},'h2o','rejected')" title="Rejeitar H₂O"
-                style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
+              <button onclick="setGasStatus(${idx},'h2o','accepted')" title="Aceitar H₂O" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">✅</button>
+              <button onclick="setGasStatus(${idx},'h2o','rejected')" title="Rejeitar H₂O" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0 2px;">❌</button>
             </span>
           </div>
-            <div style="font-size:0.75rem;color:var(--text-mid);">slope</div>
-            <div class="stat-val-s" id="cs-h2os-${idx}" style="font-size:0.78rem;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">R²</div>
-            <div class="stat-val-s" id="cs-h2or-${idx}" style="font-size:0.84rem;font-weight:700;">—</div>
-            <div style="font-size:0.75rem;color:var(--text-mid);margin-top:4px;">n pts</div>
-            <div class="stat-val-s" id="cs-npts-${idx}" style="font-size:0.75rem;">—</div>
-            <div style="font-size:0.7rem;color:#aaa;margin-top:3px;" id="cs-h2ow-${idx}">—</div>
-          </div>
-
+          <!-- n pts e H2O stats -->
+          <span style="margin-left:auto;font-size:0.75rem;color:var(--text-mid);">n pts: <strong id="cs-npts-${idx}">—</strong></span>
+          <span style="font-size:0.75rem;color:var(--text-mid);">H₂O slope: <strong id="cs-h2os-${idx}">—</strong>&nbsp;R²:<strong id="cs-h2or-${idx}">—</strong></span>
+          <!-- hidden compat -->
+          <span id="cs-ch4s-${idx}" style="display:none"></span><span id="cs-ch4r-${idx}" style="display:none"></span>
+          <span id="cs-ch4f-${idx}" style="display:none"></span><span id="cs-ch4w-${idx}" style="display:none"></span>
+          <span id="cs-co2s-${idx}" style="display:none"></span><span id="cs-co2r-${idx}" style="display:none"></span>
+          <span id="cs-co2f-${idx}" style="display:none"></span><span id="cs-co2w-${idx}" style="display:none"></span>
+          <span id="cs-h2ow-${idx}" style="display:none"></span>
         </div>
 
         <div class="curve-actions" style="flex-wrap:wrap;gap:6px;">
@@ -2331,7 +2353,10 @@ function renderCurves() {
 
     if (c.rows.length >= 5) {
       setTimeout(() => {
-        drawCurveChart(idx, c);
+        const gasA = (document.getElementById('gasA-select')?.value) || 'ch4';
+        const gasB = (document.getElementById('gasB-select')?.value) || 'co2';
+        drawGasChart(idx, c, 'A', gasA);
+        drawGasChart(idx, c, 'B', gasB);
         ['ch4','co2','h2o'].forEach(g => updateSliderTrackGas(idx, g));
         updateCurveStats(idx);
         updateGasStatusUI(idx);
@@ -2366,8 +2391,11 @@ function onSliderGas(idx, gas) {
   updateSliderTrackGas(idx, gas);
   updateCurveStats(idx);
 
-  // Só redesenha se este gás for o que está visível no gráfico
-  if (state.currentGas === gas) drawCurveChart(idx, c);
+  // Redesenha o painel A ou B se mostrar este gás
+  const gasA = document.getElementById('gasA-select')?.value || 'ch4';
+  const gasB = document.getElementById('gasB-select')?.value || 'co2';
+  if (gasA === gas) drawGasChart(idx, c, 'A', gas);
+  if (gasB === gas) drawGasChart(idx, c, 'B', gas);
 }
 
 function updateSliderTrackGas(idx, gas) {
@@ -2400,7 +2428,10 @@ function resetSliderGas(idx, gas) {
   if (vh) vh.textContent = maxT + ' s';
   updateSliderTrackGas(idx, gas);
   updateCurveStats(idx);
-  if (state.currentGas === gas) drawCurveChart(idx, c);
+  const gasA = document.getElementById('gasA-select')?.value || 'ch4';
+  const gasB = document.getElementById('gasB-select')?.value || 'co2';
+  if (gasA === gas) drawGasChart(idx, c, 'A', gas);
+  if (gasB === gas) drawGasChart(idx, c, 'B', gas);
 }
 
 function resetSlider(idx) {
@@ -2494,104 +2525,109 @@ function updateCurveStats(idx) {
   set(`cs-h2ow-${idx}`, `${ws.h2o.lo}–${ws.h2o.hi}s · ${dH2O.t.length}pts`);
 }
 
-function drawCurveChart(idx, c) {
-  const canvas = document.getElementById(`canvas-${idx}`);
+// Gas colors/labels helper
+function gasConfig(gas) {
+  if (gas === 'ch4') return { color: '#2d6a4f', label: 'CH₄ (ppm)',        vals: c => c.ch4_vals };
+  if (gas === 'co2') return { color: '#f4a261', label: 'CO₂ (ppm)',        vals: c => c.co2_vals };
+  return                     { color: '#3498db', label: 'H₂O (×10³ ppm)', vals: c => c.h2o_vals.map(v=>v/1000) };
+}
+
+function drawGasChart(idx, c, slot /* 'A'|'B' */, gas) {
+  const canvasId = `canvas${slot}-${idx}`;
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  if (state.curveCharts[idx]) { state.curveCharts[idx].destroy(); }
 
-  const gas = state.currentGas;
-  let allVals, label, color;
+  const chartKey = `${idx}_${slot}`;
+  if (state.curveCharts[chartKey]) { try { state.curveCharts[chartKey].destroy(); } catch(e){} }
 
-  if (gas === 'ch4') {
-    allVals = c.ch4_vals; label = 'CH₄ (ppm)'; color = '#2d6a4f';
-  } else if (gas === 'co2') {
-    allVals = c.co2_vals; label = 'CO₂ (ppm)'; color = '#f4a261';
-  } else {
-    allVals = c.h2o_vals.map(v=>v/1000); label = 'H₂O (×10³ ppm)'; color = '#3498db';
-  }
+  const cfg = gasConfig(gas);
+  const allVals = cfg.vals(c);
 
-  // Janela de seleção independente por gás
+  // Slider window for this gas
   const _ws = c.winSel || {};
-  const _gasKey = gas === 'ch4' ? 'ch4' : gas === 'co2' ? 'co2' : 'h2o';
-  const { lo, hi } = _ws[_gasKey] || { lo: 0, hi: 1e9 };
+  const { lo, hi } = _ws[gas] || { lo: 0, hi: c.times_s[c.times_s.length - 1] };
 
-  // Pontos fora da janela (cinza) e dentro (colorido)
   const outsideData = c.times_s.map((t,i) => t < lo || t > hi ? {x:t, y:allVals[i]} : null).filter(Boolean);
   const insideData  = c.times_s.map((t,i) => t >= lo && t <= hi ? {x:t, y:allVals[i]} : null).filter(Boolean);
 
-  // Regressão SOMENTE dentro da janela
   const times_w = c.times_s.filter(t => t >= lo && t <= hi);
   const vals_w  = allVals.filter((_,i) => c.times_s[i] >= lo && c.times_s[i] <= hi);
   const fit = linearFit(times_w, vals_w);
 
-  // Linha de fit: do lo ao hi
   const fitData = times_w.length >= 2
     ? [{x: times_w[0], y: fit.slope*times_w[0]+fit.intercept},
        {x: times_w[times_w.length-1], y: fit.slope*times_w[times_w.length-1]+fit.intercept}]
     : [];
 
-  // Linhas verticais da janela usando annotation plugin alternativo (plugin manual via dataset)
-  state.curveCharts[idx] = new Chart(canvas, {
+  state.curveCharts[chartKey] = new Chart(canvas, {
     type: 'scatter',
     data: {
       datasets: [
-        {
-          label: 'Fora da janela',
-          data: outsideData,
-          backgroundColor: '#cccccc55',
-          borderColor: '#cccccc',
-          pointRadius: 2,
-        },
-        {
-          label,
-          data: insideData,
-          backgroundColor: color + 'aa',
-          borderColor: color,
-          pointRadius: 3,
-        },
-        {
-          label: 'Regressão (janela)',
-          data: fitData,
-          type: 'line',
-          borderColor: color,
-          borderWidth: 2.5,
-          pointRadius: 0,
-          tension: 0,
-          borderDash: [],
-        }
+        { label: 'Fora', data: outsideData, backgroundColor:'#cccccc55', borderColor:'#cccccc', pointRadius: 2 },
+        { label: cfg.label, data: insideData, backgroundColor: cfg.color+'aa', borderColor: cfg.color, pointRadius: 3 },
+        { label: 'Fit', data: fitData, type:'line', borderColor: cfg.color, borderWidth: 2.5, pointRadius: 0, tension: 0 }
       ]
     },
     options: {
       animation: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.parsed.x.toFixed(0)}s: ${ctx.parsed.y.toFixed(4)}`
-          }
-        }
+        tooltip: { callbacks: { label: ctx => `${ctx.parsed.x.toFixed(0)}s: ${ctx.parsed.y.toFixed(4)}` } }
       },
       scales: {
-        x: {
-          title: { display: true, text: 'Tempo (s)', font:{size:9} },
-          ticks: { font:{size:8} }
-        },
-        y: {
-          title: { display: true, text: label, font:{size:9} },
-          ticks: { font:{size:8} }
-        }
+        x: { title: { display: true, text: 'Tempo (s)', font:{size:9} }, ticks: { font:{size:8} } },
+        y: { title: { display: true, text: cfg.label, font:{size:9} }, ticks: { font:{size:8} } }
       }
+    }
+  });
+
+  // Update mini-stats below the chart
+  const slotLow = slot.toLowerCase();
+  const slopeEl = document.getElementById(`s${slotLow}-slope-${idx}`);
+  const r2El    = document.getElementById(`s${slotLow}-r2-${idx}`);
+  const winEl   = document.getElementById(`s${slotLow}-win-${idx}`);
+  const fluxEl  = document.getElementById(`s${slotLow}-flux-${idx}`);
+  const labelEl = document.getElementById(`label-gas${slot}-${idx}`);
+
+  const gasName = gas === 'ch4' ? 'CH₄' : gas === 'co2' ? 'CO₂' : 'H₂O';
+  if (labelEl) labelEl.textContent = `Gas ${slot}: ${gasName}`;
+
+  if (slopeEl) slopeEl.textContent = fit.slope ? fit.slope.toExponential(3) : '—';
+  if (r2El)    r2El.textContent    = fit.r2    ? fit.r2.toFixed(4)          : '—';
+  if (winEl)   winEl.textContent   = `${Math.round(lo)}–${Math.round(hi)} s (${Math.round(hi-lo)} s)`;
+
+  if (fluxEl && gas !== 'h2o' && fit.slope) {
+    const M = gas === 'ch4' ? M_CH4 : M_CO2;
+    const mean_h2o = c.h2o_vals.reduce((a,b)=>a+b,0)/c.h2o_vals.length;
+    const f = calcFluxDay(fit.slope, c.win, M, mean_h2o);
+    fluxEl.textContent = `${f.mg_m2_day.toFixed(3)} mg m⁻² dia⁻¹`;
+  } else if (fluxEl) {
+    fluxEl.textContent = gas === 'h2o' ? '(sem fluxo para H₂O)' : '—';
+  }
+}
+
+function updateGasSelectors() {
+  const gasA = document.getElementById('gasA-select')?.value || 'ch4';
+  const gasB = document.getElementById('gasB-select')?.value || 'co2';
+  state.curves.forEach((c, idx) => {
+    if (c.rows.length >= 5) {
+      drawGasChart(idx, c, 'A', gasA);
+      drawGasChart(idx, c, 'B', gasB);
     }
   });
 }
 
+// Legacy: kept for backward compat
+function drawCurveChart(idx, c) {
+  const gasA = document.getElementById('gasA-select')?.value || 'ch4';
+  const gasB = document.getElementById('gasB-select')?.value || 'co2';
+  drawGasChart(idx, c, 'A', gasA);
+  drawGasChart(idx, c, 'B', gasB);
+}
+
 function showGas(gas) {
-  state.currentGas = gas;
-  Object.values(state.curveCharts).forEach(c => { try{c.destroy()}catch(e){} });
-  state.curveCharts = {};
-  state.curves.forEach((c, idx) => {
-    if (c.rows.length >= 5) drawCurveChart(idx, c);
-  });
+  // No longer used as global toggle but keep for compat
+  updateGasSelectors();
 }
 
 function setCurveStatus(idx, status) {
@@ -3014,17 +3050,32 @@ function renderJitterLegend(treatments, palette){
 function renderResultsTable(){
   const tbody=document.getElementById('results-tbody');tbody.innerHTML='';
   state.results.forEach(r=>{
-    const fc=v=>(v!==null&&isFinite(v))?v.toFixed(4):'-';
+    const fc =v=>(v!==null&&isFinite(v))?v.toFixed(4):'-';
     const fc1=v=>(v!==null&&isFinite(v))?v.toFixed(1):'-';
+    const fR2=v=>(v!==null&&isFinite(v))?v.toFixed(3):'-';
+    const fSl=v=>(v!==null&&isFinite(v))?v.toExponential(3):'-';
+    // Período usado: lo–hi (n s)
+    const ch4win = (r.win_ch4_lo!==undefined && r.win_ch4_hi!==undefined)
+      ? `${r.win_ch4_lo}–${r.win_ch4_hi} s<br><span style="color:#888;font-size:0.78rem;">(${r.ch4_sec_used??'?'} s)</span>` : '-';
+    const co2win = (r.win_co2_lo!==undefined && r.win_co2_hi!==undefined)
+      ? `${r.win_co2_lo}–${r.win_co2_hi} s<br><span style="color:#888;font-size:0.78rem;">(${r.co2_sec_used??'?'} s)</span>` : '-';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r.num}</td><td class="mono">${r.date}</td><td class="mono">${r.start}</td><td class="mono">${r.stop}</td>
+    tr.innerHTML=`
+      <td>${r.num}</td>
+      <td class="mono">${r.date}</td>
+      <td class="mono">${r.start}</td>
+      <td class="mono">${r.stop}</td>
       <td><span class="tag">${r.treatment}</span></td>
       <td class="${r.flux_ch4_day>0?'pos':'neg'} mono"><strong>${fc(r.flux_ch4_day)}</strong></td>
       <td class="${r.flux_co2_day>0?'pos':'neg'} mono"><strong>${fc1(r.flux_co2_day)}</strong></td>
-      <td class="mono">${fc(r.flux_ch4_h)}</td><td class="mono">${fc1(r.flux_co2_h)}</td>
-      <td class="mono">${r.r2_ch4.toFixed(3)}</td><td class="mono">${r.r2_co2.toFixed(3)}</td>
-      <td class="mono">${r.slope_ch4.toExponential(3)}</td><td class="mono">${r.slope_co2.toExponential(3)}</td>
-      <td>${r.n_pts}</td><td><em style="font-size:0.8rem;color:var(--text-mid)">${r.note}</em></td>`;
+      <td class="mono" style="font-weight:700;color:${(r.r2_ch4??0)>=0.9?'#2d6a4f':'#c0392b'}">${fR2(r.r2_ch4)}</td>
+      <td class="mono" style="font-weight:700;color:${(r.r2_co2??0)>=0.9?'#2d6a4f':'#c0392b'}">${fR2(r.r2_co2)}</td>
+      <td class="mono">${fSl(r.slope_ch4)}</td>
+      <td class="mono">${fSl(r.slope_co2)}</td>
+      <td class="mono" style="font-size:0.82rem;">${ch4win}</td>
+      <td class="mono" style="font-size:0.82rem;">${co2win}</td>
+      <td>${r.n_pts}</td>
+      <td><em style="font-size:0.8rem;color:var(--text-mid)">${r.note}</em></td>`;
     tbody.appendChild(tr);
   });
 }
