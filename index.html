@@ -1738,27 +1738,27 @@ function handleXlsxUpload(event) {
 function parseXlsxBuffer(arrayBuf, file) {
   try {
     const data = new Uint8Array(arrayBuf);
-    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    // NÃO usar cellDates:true — evita Date objects cujo timezone causa erros
+    const wb = XLSX.read(data, { type: 'array' });
 
     console.log('[Carbon-Flux] Abas no xlsx:', wb.SheetNames);
 
-    // Encontra aba e linha de cabeçalho corretas
-    // O template tem linhas extras de título antes dos cabeçalhos
+    // Encontra aba com a coluna "used_start"
     let bestSheet = null, bestSheetName = wb.SheetNames[0], headerRow = 0;
 
     for (const name of wb.SheetNames) {
       const sheet = wb.Sheets[name];
-      // Lê como array de arrays para encontrar a linha de cabeçalho
+      // raw:false → aplica formato de célula → hora vira string "19:59:09"
       const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
       console.log(`[Carbon-Flux] Aba "${name}" — ${raw.length} linhas`);
 
       for (let ri = 0; ri < Math.min(raw.length, 10); ri++) {
         const row = raw[ri].map(v => String(v).trim().toLowerCase());
         if (row.includes('used_start') || row.includes('start')) {
-          console.log(`[Carbon-Flux] Cabeçalho encontrado na aba "${name}", linha ${ri + 1}:`, raw[ri]);
+          console.log(`[Carbon-Flux] Cabeçalho na aba "${name}", linha ${ri + 1}:`, raw[ri]);
           bestSheet = sheet;
           bestSheetName = name;
-          headerRow = ri; // índice 0-based da linha de cabeçalho
+          headerRow = ri;
           break;
         }
       }
@@ -1772,65 +1772,60 @@ function parseXlsxBuffer(arrayBuf, file) {
       console.warn('[Carbon-Flux] Coluna "used_start" não encontrada — usando linha 1 como cabeçalho');
     }
 
-    // Lê os dados pulando as linhas antes do cabeçalho
-    // range personalizado: começa na linha do cabeçalho
+    // raw:false → SheetJS formata cada célula conforme seu number_format
+    // Célula com h:mm:ss e valor 19:59:09 → retorna "19:59:09" como string ✓
+    // Célula com @ (texto) → retorna o texto diretamente ✓
+    // Célula numérica com 0.0 → retorna "28.3" como string → parseFloat converte ✓
     const rawAll = XLSX.utils.sheet_to_json(bestSheet, {
-      header: 1, defval: '', raw: true, cellDates: true
+      header: 1, defval: '', raw: false
     });
 
-    // Linha headerRow = nomes das colunas, linhas seguintes = dados
-    // Mas pula a linha imediatamente após o cabeçalho se for linha de descrição
-    // (detecta: se a linha logo abaixo do cabeçalho NÃO tem valores numéricos em colunas de número)
     const headers = rawAll[headerRow].map(v => String(v).trim());
-    
-    // Encontra índices das colunas-chave
+
+    // Índices das colunas-chave para detectar linha de dados
     const iStart = headers.indexOf('used_start');
     const iDate  = headers.findIndex(h => h === 'Date');
     const iTa    = headers.findIndex(h => h === 'Ta');
 
-    // Determina a primeira linha de dados reais
-    // Pula linhas que são descrições como "HH:MM:SS", "YYYY-MM-DD", "°C" etc.
+    // Pula linha de descrição (ex: "HH:MM:SS", "YYYY-MM-DD", "°C")
     let dataStartRow = headerRow + 1;
     while (dataStartRow < rawAll.length) {
       const row = rawAll[dataStartRow];
       const startVal = iStart >= 0 ? String(row[iStart] || '').trim() : '';
       const dateVal  = iDate  >= 0 ? String(row[iDate]  || '').trim() : '';
-      const taVal    = iTa    >= 0 ? row[iTa] : '';
+      const taVal    = iTa    >= 0 ? String(row[iTa]    || '').trim() : '';
 
-      // Dados reais: used_start é HH:MM:SS com números, OU Date é YYYY-MM-DD, OU Ta é número
       const validTime = /^\d{1,2}:\d{2}(:\d{2})?$/.test(startVal);
       const validDate = /^\d{4}-\d{2}-\d{2}/.test(dateVal);
-      const validTa   = taVal !== '' && !isNaN(parseFloat(taVal)) && isFinite(taVal);
-      // Date objects do SheetJS também são válidos
-      const isDateObj = row[iStart] instanceof Date || row[iDate] instanceof Date;
+      const validTa   = taVal !== '' && !isNaN(parseFloat(taVal));
 
-      if (validTime || validDate || validTa || isDateObj) break;
-      console.log(`[Carbon-Flux] Pulando linha ${dataStartRow + 1} (instrução):`, String(row[iStart]||''), String(row[iDate]||''));
+      if (validTime || validDate || validTa) break;
+      console.log(`[Carbon-Flux] Pulando linha ${dataStartRow + 1}:`, startVal, dateVal);
       dataStartRow++;
     }
 
     console.log(`[Carbon-Flux] Headers (linha ${headerRow + 1}):`, headers);
-    console.log(`[Carbon-Flux] Dados começam na linha ${dataStartRow + 1}`);
+    console.log(`[Carbon-Flux] Dados a partir da linha ${dataStartRow + 1}`);
 
-    // Converte para array de objetos usando os headers corretos
+    // Converte para array de objetos
     const json = rawAll.slice(dataStartRow).map(row => {
       const obj = {};
       headers.forEach((h, i) => { if (h) obj[h] = row[i] !== undefined ? row[i] : ''; });
       return obj;
-    }).filter(row => {
-      // Remove linhas completamente vazias
-      return Object.values(row).some(v => v !== '' && v !== null && v !== undefined);
-    });
+    }).filter(row =>
+      Object.values(row).some(v => v !== '' && v !== null && v !== undefined)
+    );
 
-    console.log(`[Carbon-Flux] ${json.length} linhas de dados lidas da aba "${bestSheetName}"`);
+    console.log(`[Carbon-Flux] ${json.length} linhas lidas da aba "${bestSheetName}"`);
     if (json.length > 0) {
       const r0 = json[0];
-      const toStr = v => v instanceof Date ? `[Date: ${v.toISOString()}]` : `(${typeof v}) ${JSON.stringify(v)}`;
-      console.log('[Carbon-Flux] Linha 0:');
+      const toStr = v => `(${typeof v}) ${JSON.stringify(v)}`;
+      console.log('[Carbon-Flux] Linha 0 diagnóstico:');
       console.log('  used_start:', toStr(r0['used_start']), '→', excelTimeToHMS(r0['used_start']));
       console.log('  used_stop: ', toStr(r0['used_stop']),  '→', excelTimeToHMS(r0['used_stop']));
-      console.log('  Date:      ', toStr(r0['Date']),        '→', excelDateToString(r0['Date']));
-      console.log('  Ta:        ', toStr(r0['Ta']));
+      console.log('  Date:      ', toStr(r0['Date']),       '→', excelDateToString(r0['Date']));
+      console.log('  Ta:        ', toStr(r0['Ta']), '→ parseFloat =', parseFloat(r0['Ta']));
+      console.log('  tube.l:    ', toStr(r0['tube.l']));
     }
 
     state.timesData = json;
@@ -1863,19 +1858,23 @@ function buildWindowsFromTimes() {
     const stop_raw  = row['used_stop']  || row['stop']  || '';
     const date_raw  = row['Date'] || '';
 
+    // Com raw:false, números vêm como strings formatadas ("28.3", "997.1")
+    // parseFloat converte corretamente
+    const rawTube = parseFloat(row['tube.l']);
+
     return {
-      num:       row['Num'] || (i+1),
+      num:       parseInt(row['Num']) || (i+1),
       date:      excelDateToString(date_raw),
       start:     excelTimeToHMS(start_raw),
       stop:      excelTimeToHMS(stop_raw),
-      ta:        parseFloat(row['Ta'] || row['Ta_C'] || 20),
-      pressure:  parseFloat(row['luchtdruk'] || row['pressure_hPa'] || 1013),
-      diam:      parseFloat(row['chamber width/diameter'] || row['diam_cm'] || 15.5),
-      height:    parseFloat(row['chamber height'] || row['height_cm'] || 29.5),
+      ta:        parseFloat(row['Ta'] || row['Ta_C']) || 20,
+      pressure:  parseFloat(row['luchtdruk'] || row['pressure_hPa']) || 1013,
+      diam:      parseFloat(row['chamber width/diameter'] || row['diam_cm']) || 15.5,
+      height:    parseFloat(row['chamber height'] || row['height_cm']) || 29.5,
       shape:     (row['chamber shape'] || 'round').toLowerCase(),
       treatment: row['plot'] || row['treatment'] || '',
       note:      row['Unnamed: 12'] || row['note'] || '',
-      tube_l:    parseFloat(row['tube.l'] || 0.20)
+      tube_l:    isNaN(rawTube) || rawTube <= 0 ? 0.20 : rawTube > 2 ? rawTube / 100 : rawTube
     };
   });
 }
@@ -1893,35 +1892,43 @@ function buildWindowsFromTimes() {
 function excelTimeToHMS(val) {
   if (val === null || val === undefined || val === '') return '';
 
-  // CASO 1: objeto Date do JavaScript (SheetJS cellDates:true)
-  // Hora pura do Excel vem como Date("1899-12-30THH:MM:SS.000Z") → usar UTC
-  if (val instanceof Date) {
-    const hh = String(val.getUTCHours()).padStart(2,'0');
-    const mm = String(val.getUTCMinutes()).padStart(2,'0');
-    const ss = String(val.getUTCSeconds()).padStart(2,'0');
-    return `${hh}:${mm}:${ss}`;
+  // CASO 1: string — o caso principal com raw:false
+  // SheetJS aplica o formato h:mm:ss e retorna "19:59:09" ou "20:7:0"
+  if (typeof val === 'string') {
+    const s = val.trim();
+    // Aceita H:M:S, HH:MM:SS, H:MM:SS etc.
+    if (/^\d{1,2}:\d{1,2}(:\d{1,2})?$/.test(s)) {
+      const p = s.split(':');
+      return `${p[0].padStart(2,'0')}:${p[1].padStart(2,'0')}:${(p[2]||'0').padStart(2,'0')}`;
+    }
+    // ISO string com T: "1899-12-30T19:59:09.000Z"
+    const mISO = s.match(/T(\d{2}):(\d{2}):(\d{2})/);
+    if (mISO) return `${mISO[1]}:${mISO[2]}:${mISO[3]}`;
+    // Número como string (fração de dia)
+    const n = parseFloat(s);
+    if (!isNaN(n) && n > 0 && n < 1) return fracToHMS(n);
+    return s; // devolve como está
   }
 
-  // CASO 2: número — fração pura (0.544097) ou serial data+hora (45895.544097)
+  // CASO 2: número — fração de dia (0.832...) — fallback se raw:false não funcionou
   if (typeof val === 'number') {
     const frac = val % 1;
-    if (frac > 0.00001) return fracToHMS(frac);
-    if (val >= 0 && val < 1) return fracToHMS(val);
+    if (frac > 0.000011) return fracToHMS(frac);
+    if (val > 0 && val < 1) return fracToHMS(val);
     return '';
   }
 
-  // CASO 3: string
-  if (typeof val === 'string') {
-    const s = val.trim();
-    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
-      const p = s.split(':');
-      return `${p[0].padStart(2,'0')}:${p[1].padStart(2,'0')}:${(p[2]||'00').padStart(2,'0')}`;
+  // CASO 3: Date object (fallback extremo)
+  if (val instanceof Date) {
+    // Tentar hora local primeiro (mais seguro)
+    const hh = String(val.getHours()).padStart(2,'0');
+    const mm = String(val.getMinutes()).padStart(2,'0');
+    const ss = String(val.getSeconds()).padStart(2,'0');
+    // Se data base = 1899, é hora pura — usar UTC como last resort
+    if (val.getFullYear() <= 1900) {
+      return `${String(val.getUTCHours()).padStart(2,'0')}:${String(val.getUTCMinutes()).padStart(2,'0')}:${String(val.getUTCSeconds()).padStart(2,'0')}`;
     }
-    const mISO = s.match(/T(\d{2}):(\d{2}):(\d{2})/);
-    if (mISO) return `${mISO[1]}:${mISO[2]}:${mISO[3]}`;
-    const n = parseFloat(s);
-    if (!isNaN(n) && n >= 0 && n < 1) return fracToHMS(n);
-    return s;
+    return `${hh}:${mm}:${ss}`;
   }
 
   return String(val).trim();
