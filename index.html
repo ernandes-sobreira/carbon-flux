@@ -2048,8 +2048,11 @@ function buildCurves() {
     const fit_h2o = linearFit(times_s, h2o_vals);
 
     // Calculate flux
-    const flux_ch4 = calcFlux(fit_ch4.slope, win, M_CH4);
-    const flux_co2 = calcFlux(fit_co2.slope, win, M_CO2);
+    const mean_h2o_win = h2o_vals.length
+      ? h2o_vals.reduce((a,b)=>a+b,0)/h2o_vals.length
+      : 0;
+    const flux_ch4 = calcFlux(fit_ch4.slope, win, M_CH4, mean_h2o_win);
+    const flux_co2 = calcFlux(fit_co2.slope, win, M_CO2, mean_h2o_win);
 
     state.curves.push({
       win, rows, times_s,
@@ -2133,27 +2136,21 @@ function linearFit(x, y) {
   return { slope, intercept, r2, n };
 }
 
-function calcFlux(slope_ppm_per_s, win, M_g_per_mol) {
-  // Chamber geometry
-  let area_m2, vol_m3;
-  const diam = win.diam || 15.5;
-  const height = win.height || 29.5;
-  if ((win.shape||'round').includes('round') || (win.shape||'').includes('cyl')) {
-    const r_m = diam/2/100;
-    area_m2 = Math.PI * r_m * r_m;
-  } else {
-    // rect: diam = width, need length — use diam²
-    const s = diam/100;
-    area_m2 = s * s;
-  }
-  vol_m3 = area_m2 * (height/100);
-
-  const P_Pa = (win.pressure || 1013) * 100;
-  const T_K = (win.ta || 20) + 273.15;
-
-  // F [mg/m²/h] = slope [ppm/s] × (V/A) [m] × (P/RT) [mol/m³] × M [g/mol] × 1e-6 [ppm→mol/mol] × 3600 [s→h] × 1000 [g→mg]
-  const flux = slope_ppm_per_s * (vol_m3/area_m2) * (P_Pa/(R_GAS*T_K)) * M_g_per_mol * 1e-6 * 3600 * 1000;
-  return { value: flux, area_m2, vol_m3, P_Pa, T_K };
+function calcFlux(slope_ppm_per_s, win, M_g_per_mol, mean_h2o_ppm) {
+  // Wrapper sobre calcFluxDay para garantir uma única definicao de volume,
+  // area e correcao de diluicao por H2O em toda a plataforma.
+  const f = calcFluxDay(slope_ppm_per_s, win, M_g_per_mol, mean_h2o_ppm || 0);
+  return {
+    value: f.mg_m2_h,
+    mg_m2_h: f.mg_m2_h,
+    mg_m2_day: f.mg_m2_day,
+    umol_m2_s: f.umol_m2_s,
+    area_m2: f.area_m2,
+    vol_m3: f.vol_m3,
+    P_Pa: f.P_Pa,
+    T_K: f.T_K,
+    h2o_corr: f.h2o_corr
+  };
 }
 
 // ============================================================
@@ -3909,6 +3906,7 @@ async function loadMyProjects() {
 async function joinProjectByCode() {
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
   const res  = document.getElementById('join-result');
+  if (!cloud.user) { openAuthModal(); return; }
   if (code.length !== 6) { res.innerHTML='<span style="color:#c0392b;">Código deve ter 6 caracteres.</span>'; return; }
 
   res.innerHTML = '<span style="color:var(--text-mid);">Buscando...</span>';
@@ -3918,10 +3916,11 @@ async function joinProjectByCode() {
     if (!snap.exists()) { res.innerHTML='<span style="color:#c0392b;">Projeto não encontrado.</span>'; return; }
 
     const p = snap.data();
+    const members = Array.isArray(p.members) ? p.members : [];
     // Adicionar usuário como membro se ainda não for
-    if (!p.members.includes(cloud.user.uid)) {
+    if (!members.includes(cloud.user.uid)) {
       await updateDoc(doc(db,'projects', code), {
-        members: [...p.members, cloud.user.uid]
+        members: [...members, cloud.user.uid]
       });
     }
     res.innerHTML = `<div class="alert alert-info">✅ Projeto encontrado: <strong>${p.name}</strong></div>`;
